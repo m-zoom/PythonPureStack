@@ -160,9 +160,9 @@ def add_face(user_id):
         faces, _ = face_recognition.detect_faces(file_path)
         
         if len(faces) > 0:
-            # Save the face image to the database
-            # Store the path without 'static/' prefix as it will be added by url_for in templates
-            relative_path = os.path.join('uploads', unique_filename)
+            # Save the face image to the database with full relative path
+            # For local development compatibility, include the 'static/' prefix
+            relative_path = os.path.join('static/uploads', unique_filename)
             DatabaseManager.add_face_image(user_id, relative_path)
             
             # Retrain the model
@@ -230,8 +230,8 @@ def search():
                 confidence_threshold=confidence_threshold
             )
             
-            # Keep the uploaded file for display but store path without 'static/' prefix
-            search_image = os.path.join('uploads', unique_filename)
+            # Store the path with 'static/' prefix for local development compatibility
+            search_image = os.path.join('static/uploads', unique_filename)
             
             return render_template('search.html', 
                                  matches=matches, 

@@ -104,11 +104,10 @@ class FaceRecognition:
         
         # Prepare training data
         for idx, face_image in enumerate(all_face_images):
-            # Handle image paths correctly for both local and Replit environments
-            if face_image.image_path.startswith('static/'):
-                image_path = os.path.join(os.path.dirname(__file__), face_image.image_path)
-            else:
-                image_path = os.path.join(os.path.dirname(__file__), 'static', face_image.image_path)
+            # Handle image paths with direct path processing
+            # If path starts with 'static/', use it directly
+            # If it doesn't have 'static/' prefix, it's already stored correctly for local environment
+            image_path = os.path.join(os.path.dirname(__file__), face_image.image_path)
             
             extracted_face = self.extract_face(image_path)
             
