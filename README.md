@@ -1,86 +1,84 @@
-Face Recognition System
+# Federal Biometrics of Nigeria (FBN)
 
 Developer: ADEBAYO MUSTURPHA KEWULERE
 
-Tiktok: @adebayo_musturpha
+TikTok: @adebayo_musturpha  
+Facebook: Musturhs Adebayo  
+X: @mzoom_olabewa  
 
-Facebook: Musturhs Adebayo
+## Project Description
+This is a sophisticated biometric face recognition system built for the Federal Biometrics of Nigeria (FBN). Using Python and OpenCV, the system can detect and identify individuals by matching faces against a stored database. The system provides comprehensive features for face detection, recognition, user management, and video analysis capabilities for security and identification purposes.
 
-x: @mzoom_olabewa
+## Tech Stack
+- **Backend Framework**: Flask
+- **Database**: SQLite with SQLAlchemy ORM
+- **Face Recognition**: OpenCV with LBPH Face Recognizer
+- **Frontend**: HTML, CSS, JavaScript with Bootstrap
+- **Server**: Gunicorn
+- **Image Processing**: NumPy, OpenCV
+- **Development Tools**: Python 3.x
 
-Project Description
-This is a sophisticated face recognition system built with Python and OpenCV that can detect and identify individuals by matching faces against a stored database. The system provides features for face detection, recognition, user management, and video analysis capabilities.
+## Key Features
+- Face detection and recognition
+- User management system
+- Real-time webcam capture
+- Video analysis with face tracking and timestamps
+- Confidence-based matching
+- Database storage for face images
+- Training interface for the recognition model
 
-Tech Stack
-Backend Framework: Flask
+## Setup Instructions
 
-Database: SQLite with SQLAlchemy ORM
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/federal-biometrics-nigeria.git
+   cd federal-biometrics-nigeria
+   ```
 
-Face Recognition: OpenCV with LBPH Face Recognizer
+2. Install required packages:
+   ```
+   pip install flask flask-sqlalchemy sqlalchemy opencv-contrib-python numpy gunicorn werkzeug
+   ```
 
-Frontend: HTML, CSS, JavaScript
+3. Ensure the following directory structure exists:
+   ```
+   static/
+   ├── haarcascades/
+   ├── models/
+   ├── uploads/
+   └── css/
+   ```
 
-Server: Gunicorn
+4. Initialize the database:
+   ```
+   python -c "from app import db; db.create_all()"
+   ```
 
-Image Processing: NumPy, OpenCV
+5. Run the application:
+   ```
+   python main.py
+   ```
+   
+   For production:
+   ```
+   gunicorn --bind 0.0.0.0:5000 main:app
+   ```
+   
+6. The application will be available at http://0.0.0.0:5000
 
-Development Tools: Python 3.x
+## Usage
 
+1. Access the web interface
+2. Add users with their face images
+3. Train the recognition model
+4. Use the search feature to find matching faces
+5. Analyze videos for face detection and recognition with timestamps
 
-Key Features
-Face detection and recognition
+## Notes
 
-User management system
-
-Real-time webcam capture
-
-Video analysis with face tracking
-
-Confidence-based matching
-
-Database storage for face images
-
-Training interface for the recognition model
-
-Setup Instructions
-
-Clone the repository
-
-Install required packages:
-
-Dependencies
-
-flask
-
-opencv-python
-
-numpy
-
-gunicorn
-
-flask-sqlalchemy
-
-use: pip install flask flask-sqlalchemy sqlalchemy opencv-contrib-python numpy werkzeug
-
-Ensure the following directory structure exists:
-static/
-├── haarcascades/
-├── models/
-└── uploads/
-Initialize the database:
-python3 -c "from app import db; db.create_all()"
-Run the application:
-gunicorn --bind 0.0.0.0:5000 main:app
-The application will be available at http://0.0.0.0:5000
-
-Usage
-Access the web interface
-Add users with their face images
-Train the recognition model
-Use the search feature to find matching faces
-Analyze videos for face detection and recognition
-Notes
-The system uses LBPH (Local Binary Patterns Histograms) for face recognition
-Face detection uses Haar Cascade Classifiers
-Images are automatically processed and standardized before storage
-The confidence threshold can be adjusted for matching accuracy
+- The system uses LBPH (Local Binary Patterns Histograms) for face recognition
+- Face detection uses Haar Cascade Classifiers
+- Images are automatically processed and standardized before storage
+- The confidence threshold can be adjusted for matching accuracy
+- For optimal recognition performance, multiple face images per user are recommended
+- Video analysis provides chronological detection with timestamps

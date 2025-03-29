@@ -1,0 +1,3 @@
+[workflow]
+name = "Flask"
+command = "python main.py"

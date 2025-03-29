@@ -161,7 +161,7 @@ def add_face(user_id):
         
         if len(faces) > 0:
             # Save the face image to the database
-            # Store the path without 'static/' prefix as it will be added by url_for in templates
+            # For local deployment compatibility, store only the uploads directory
             relative_path = os.path.join('uploads', unique_filename)
             DatabaseManager.add_face_image(user_id, relative_path)
             
@@ -263,12 +263,13 @@ def webcam_capture():
         os.remove(file_path)
         return jsonify({'error': 'No face detected'}), 400
     
-    # For client-side display, keep the full path
-    relative_path = os.path.join('static/uploads', filename)
+    # For client-side display in the browser, we need the full path
+    # But save path in a format compatible with both Replit and local environments
+    file_path_for_client = os.path.join('static/uploads', filename)
     
     return jsonify({
         'success': True,
-        'file_path': relative_path,
+        'file_path': file_path_for_client,
         'faces': len(faces)
     })
 

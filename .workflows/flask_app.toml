@@ -1,0 +1,4 @@
+[flask]
+command = "python main.py"
+persistent = true
+runScriptOnReboot = true

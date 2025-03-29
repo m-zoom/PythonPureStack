@@ -1,108 +1,87 @@
-/* Custom styles to complement Bootstrap */
+/* Additional custom styles for the Federal Biometrics of Nigeria (FBN) application */
 
-/* Main container spacing */
-.container {
-    padding-top: 20px;
-    padding-bottom: 20px;
+/* General styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Card styling enhancements */
+.footer {
+    margin-top: auto;
+}
+
+/* Card enhancements */
 .card {
-    margin-bottom: 20px;
-    border: none;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
 }
 
 .card-header {
-    font-weight: 500;
+    padding: 1rem;
 }
 
-/* User profile image */
-.profile-image {
-    width: 100%;
-    max-width: 300px;
-    height: auto;
-    border-radius: 5px;
+/* Timeline for video analysis */
+.timeline-container {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
 }
 
-/* Face images in grid */
-.face-image-card {
+.timeline-item {
     position: relative;
-    overflow: hidden;
-    border-radius: 5px;
+    padding-bottom: 1rem;
 }
 
-.face-image-card img {
-    transition: transform 0.3s ease;
-}
-
-.face-image-card:hover img {
-    transform: scale(1.05);
+.timeline-item:before {
+    content: "";
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
 }
 
 /* Webcam container */
 #webcam {
     width: 100%;
-    border-radius: 5px;
-    background-color: #343a40;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 0.5rem;
 }
 
-/* Preview image container */
-#photo_preview {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-}
-
-/* Better spacing for form elements */
-.form-label {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-
-.form-control:focus {
+/* Form elements */
+.form-control:focus, .btn:focus {
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-/* Styles for the search results */
-.match-card {
-    transition: transform 0.2s;
+/* Image previews */
+#photo_preview, .card-img-top {
+    object-fit: cover;
+    max-height: 300px;
+    width: auto;
+    margin: 0 auto;
 }
 
-.match-card:hover {
-    transform: translateY(-5px);
+/* Ensure proper spacing in the navbar */
+.navbar .nav-link {
+    padding: 0.5rem 1rem;
 }
 
-/* Make buttons more consistent */
-.btn {
-    border-radius: 4px;
-    font-weight: 500;
-}
-
-/* Improve footer */
-.footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 2rem;
-}
-
-/* Override spacing for icons in buttons */
-.btn i {
-    margin-right: 5px;
-}
-
-/* Transition effects */
-.card,
-.btn,
+/* Adjust alert margins */
 .alert {
-    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
 }
 
-/* Improve table styling */
-.table {
-    border-radius: 5px;
-    overflow: hidden;
+/* Progress bar enhancements */
+.progress {
+    height: 1.5rem;
+    border-radius: 0.5rem;
 }
 
-.table th {
-    font-weight: 600;
+.progress-bar {
+    font-weight: bold;
 }
