@@ -162,7 +162,8 @@ def add_face(user_id):
         if len(faces) > 0:
             # Save the face image to the database with full relative path
             # For local development compatibility, include the 'static/' prefix
-            relative_path = os.path.join('static/uploads', unique_filename)
+            # Use forward slashes for web URLs, regardless of the OS
+            relative_path = 'static/uploads/' + unique_filename
             DatabaseManager.add_face_image(user_id, relative_path)
             
             # Retrain the model
@@ -231,7 +232,8 @@ def search():
             )
             
             # Store the path with 'static/' prefix for local development compatibility
-            search_image = os.path.join('static/uploads', unique_filename)
+            # Use forward slashes for web URLs, regardless of the OS
+            search_image = 'static/uploads/' + unique_filename
             
             return render_template('search.html', 
                                  matches=matches, 
@@ -263,8 +265,8 @@ def webcam_capture():
         os.remove(file_path)
         return jsonify({'error': 'No face detected'}), 400
     
-    # For client-side display, keep the full path
-    relative_path = os.path.join('static/uploads', filename)
+    # For client-side display, keep the full path with forward slashes for web URLs
+    relative_path = 'static/uploads/' + filename
     
     return jsonify({
         'success': True,

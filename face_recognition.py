@@ -33,11 +33,14 @@ class FaceRecognition:
     def detect_faces(self, image_path):
         """Detect faces in an image and return list of face regions"""
         try:
+            # Normalize path separators to forward slashes for web URLs
+            image_path = image_path.replace('\\', '/')
+            
             # Handle image paths correctly for both local and Replit environments
             if not os.path.exists(image_path):
                 # Try adding static/ prefix if needed
                 if not image_path.startswith('static/'):
-                    potential_path = os.path.join(os.path.dirname(__file__), 'static', image_path)
+                    potential_path = os.path.join(os.path.dirname(__file__), 'static', image_path).replace('\\', '/')
                     if os.path.exists(potential_path):
                         image_path = potential_path
             
@@ -105,9 +108,8 @@ class FaceRecognition:
         # Prepare training data
         for idx, face_image in enumerate(all_face_images):
             # Handle image paths with direct path processing
-            # If path starts with 'static/', use it directly
-            # If it doesn't have 'static/' prefix, it's already stored correctly for local environment
-            image_path = os.path.join(os.path.dirname(__file__), face_image.image_path)
+            # Make sure to use forward slashes for consistency
+            image_path = os.path.join(os.path.dirname(__file__), face_image.image_path).replace('\\', '/')
             
             extracted_face = self.extract_face(image_path)
             
@@ -246,8 +248,8 @@ class FaceRecognition:
                 
                 # Process every Nth frame based on sample_rate
                 if frame_number % sample_rate == 0:
-                    # Save frame as temporary image
-                    temp_frame_path = os.path.join(os.path.dirname(__file__), 'static/uploads', f'temp_frame_{frame_number}.jpg')
+                    # Save frame as temporary image with forward slashes
+                    temp_frame_path = os.path.join(os.path.dirname(__file__), 'static/uploads', f'temp_frame_{frame_number}.jpg').replace('\\', '/')
                     cv2.imwrite(temp_frame_path, frame)
                     
                     # Timestamp in seconds
@@ -258,9 +260,9 @@ class FaceRecognition:
                     
                     # Process each face in the frame
                     for face_idx, (x, y, w, h) in enumerate(faces):
-                        # Extract and save the face
+                        # Extract and save the face with forward slashes
                         face_file = f'temp_face_{frame_number}_{face_idx}.jpg'
-                        face_path = os.path.join(os.path.dirname(__file__), 'static/uploads', face_file)
+                        face_path = os.path.join(os.path.dirname(__file__), 'static/uploads', face_file).replace('\\', '/')
                         
                         # Create a copy of just the face region and save it
                         face_img = gray[y:y+h, x:x+w]
@@ -287,7 +289,7 @@ class FaceRecognition:
                                     'time_str': time_str,
                                     'user': user,
                                     'confidence': confidence,
-                                    'face_path': os.path.join('uploads', face_file),
+                                    'face_path': 'uploads/' + face_file,
                                     'face_position': (x, y, w, h)
                                 })
                         
