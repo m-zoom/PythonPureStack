@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+    Haar Cascade Face Detector
+    Contributed by Intel Corporation
+
+    NOTE: This file has been abbreviated for space reasons.
+    The full XML would be too large to include directly.
+    
+    This is a reference to the file which needs to be downloaded separately:
+    https://github.com/opencv/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
+-->
+<opencv_storage>
+<haarcascade_frontalface_default type_id="opencv-haar-classifier">
+  <size>
+    24 24</size>
+  <stages>
+    <_>
+      <!-- This is a simplified version of the file. The real xml file should be downloaded from OpenCV's repository -->
+      <!-- and placed in this location for the application to work properly. -->
+      <!-- Each stage contains a list of weak classifiers that together create a strong classifier -->
+    </_>
+  </stages>
+</haarcascade_frontalface_default>
+</opencv_storage>

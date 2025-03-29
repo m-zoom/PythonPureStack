@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4><i class="fas fa-search"></i> Face Recognition Search</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="face_image" class="form-label">Upload Face Image</label>
+                                <div class="input-group mb-3">
+                                    <input type="file" class="form-control" id="face_image" name="face_image" accept="image/png, image/jpeg, image/jpg" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="capture_button">
+                                        <i class="fas fa-camera"></i> Capture
+                                    </button>
+                                </div>
+                                <div class="form-text">Upload a clear image of the face you want to search for.</div>
+                            </div>
+                            
+                            <div id="webcam_container" class="d-none mb-3">
+                                <video id="webcam" class="img-fluid rounded mb-2" autoplay></video>
+                                <div class="d-flex justify-content-center">
+                                    <button id="take_photo" type="button" class="btn btn-primary me-2">
+                                        <i class="fas fa-camera"></i> Take Photo
+                                    </button>
+                                    <button id="cancel_photo" type="button" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            <canvas id="canvas" class="d-none"></canvas>
+                            
+                            <div id="preview_container" class="text-center d-none mt-3">
+                                <img id="photo_preview" class="img-fluid rounded mb-2" src="" alt="Captured face">
+                                <div>
+                                    <button id="use_photo" type="button" class="btn btn-success me-2">
+                                        <i class="fas fa-check"></i> Use This Photo
+                                    </button>
+                                    <button id="retake_photo" type="button" class="btn btn-warning">
+                                        <i class="fas fa-redo"></i> Retake
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 mt-3">
+                                <label for="confidence_threshold" class="form-label">Confidence Threshold: 
+                                    <span id="threshold_value">{% if confidence_threshold %}{{ confidence_threshold }}{% else %}50{% endif %}%</span>
+                                </label>
+                                <input type="range" class="form-range" id="confidence_threshold" name="confidence_threshold" 
+                                       min="0" max="100" step="5" value="{% if confidence_threshold %}{{ confidence_threshold }}{% else %}50{% endif %}">
+                                <div class="form-text">Adjust the minimum confidence level for matching faces. Higher values require better matches.</div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-info">
+                                    <i class="fas fa-search"></i> Search Faces
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle"></i> How It Works</h5>
+                                <ol>
+                                    <li>Upload a photo or capture one using your webcam</li>
+                                    <li>The system will detect faces in the image</li>
+                                    <li>Faces are compared against all registered users</li>
+                                    <li>Matches are returned with a confidence score</li>
+                                    <li>Adjust the threshold to control match sensitivity</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h5><i class="fas fa-exclamation-triangle"></i> For Best Results</h5>
+                                <ul>
+                                    <li>Use clear, well-lit images</li>
+                                    <li>Face should be clearly visible and not obscured</li>
+                                    <li>Image should be front-facing with neutral expression</li>
+                                    <li>If no matches are found, try adjusting the threshold</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if search_image and matches is defined %}
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header {% if matches %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h4>
+                    {% if matches %}
+                    <i class="fas fa-check-circle"></i> Match Results ({{ matches|length }} found)
+                    {% else %}
+                    <i class="fas fa-times-circle"></i> No Matches Found
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Search Image</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <img src="{{ url_for('static', filename=search_image.replace('static/', '')) }}" 
+                                     class="img-fluid rounded" alt="Search Image">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        {% if matches %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Name</th>
+                                        <th>Confidence</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for idx, match in enumerate(matches) %}
+                                    <tr>
+                                        <td>{{ idx + 1 }}</td>
+                                        <td>{{ match['user'].name }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar 
+                                                            {% if match['confidence'] >= 80 %}bg-success
+                                                            {% elif match['confidence'] >= 60 %}bg-info
+                                                            {% elif match['confidence'] >= 40 %}bg-warning
+                                                            {% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ match['confidence'] }}%;" 
+                                                     aria-valuenow="{{ match['confidence'] }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ match['confidence'] }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('user_details', user_id=match['user'].id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-user"></i> View Profile
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                            <h4>No Matching Faces Found</h4>
+                            <p>Try adjusting the confidence threshold or using a different image.</p>
+                            <p>If this person should be in the system, consider adding them as a new user.</p>
+                            <a href="{{ url_for('add_user') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-user-plus"></i> Add New User
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+<script>
+    // Update the confidence threshold value display
+    const thresholdSlider = document.getElementById('confidence_threshold');
+    const thresholdValue = document.getElementById('threshold_value');
+    
+    thresholdSlider.addEventListener('input', function() {
+        thresholdValue.textContent = this.value + '%';
+    });
+</script>
+{% endblock %}

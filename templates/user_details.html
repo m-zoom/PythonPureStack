@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('view_users') }}">Users</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ user.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-user"></i> User Profile</h4>
+                    <div>
+                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="card-title">Personal Information</h5>
+                        <table class="table">
+                            <tr>
+                                <th style="width: 30%">Name:</th>
+                                <td>{{ user.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{ user.email if user.email else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Phone:</th>
+                                <td>{{ user.phone if user.phone else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Added On:</th>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated:</th>
+                                <td>{{ user.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% if user.details %}
+                            <tr>
+                                <th>Additional Details:</th>
+                                <td>{{ user.details }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Face Images</h5>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFaceModal">
+                                <i class="fas fa-plus"></i> Add Face
+                            </button>
+                        </div>
+                        
+                        {% if face_images %}
+                        <div class="row">
+                            {% for image in face_images %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <img src="{{ url_for('static', filename=image.image_path.replace('static/', '')) }}" 
+                                         class="card-img-top" alt="Face Image">
+                                    <div class="card-body">
+                                        <p class="card-text text-muted small">
+                                            Added: {{ image.created_at.strftime('%Y-%m-%d') }}
+                                        </p>
+                                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" 
+                                                data-bs-target="#deleteFaceModal{{ image.id }}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Delete Face Modal -->
+                                <div class="modal fade" id="deleteFaceModal{{ image.id }}" tabindex="-1" 
+                                     aria-labelledby="deleteFaceModalLabel{{ image.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title" id="deleteFaceModalLabel{{ image.id }}">
+                                                    <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to delete this face image?</p>
+                                                <p>This action cannot be undone and may affect the recognition accuracy.</p>
+                                                <div class="text-center">
+                                                    <img src="{{ url_for('static', filename=image.image_path.replace('static/', '')) }}" 
+                                                         class="img-fluid rounded" style="max-height: 200px;" alt="Face Image">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times"></i> Cancel
+                                                </button>
+                                                <form action="{{ url_for('delete_face', user_id=user.id, image_id=image.id) }}" method="post">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="fas fa-trash"></i> Delete Image
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-circle"></i> No face images available for this user.
+                            <p class="mb-0 mt-2">Add at least one face image to enable recognition.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Face Modal -->
+<div class="modal fade" id="addFaceModal" tabindex="-1" aria-labelledby="addFaceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addFaceModalLabel">
+                    <i class="fas fa-camera"></i> Add Face Image
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addFaceForm" action="{{ url_for('add_face', user_id=user.id) }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="face_image" class="form-label">Upload Photo</label>
+                        <div class="input-group mb-3">
+                            <input type="file" class="form-control" id="face_image" name="face_image" accept="image/png, image/jpeg, image/jpg" required>
+                            <button class="btn btn-outline-secondary" type="button" id="capture_button">
+                                <i class="fas fa-camera"></i> Capture
+                            </button>
+                        </div>
+                        <div class="form-text">Upload a clear front-facing photo of the person's face.</div>
+                    </div>
+                    
+                    <div id="webcam_container" class="d-none mb-3">
+                        <video id="webcam" class="img-fluid rounded mb-2" autoplay></video>
+                        <div class="d-flex justify-content-center">
+                            <button id="take_photo" type="button" class="btn btn-primary me-2">
+                                <i class="fas fa-camera"></i> Take Photo
+                            </button>
+                            <button id="cancel_photo" type="button" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="canvas" class="d-none"></canvas>
+                    
+                    <div id="preview_container" class="text-center d-none mt-3 mb-3">
+                        <img id="photo_preview" class="img-fluid rounded mb-2" src="" alt="Captured face">
+                        <div>
+                            <button id="use_photo" type="button" class="btn btn-success me-2">
+                                <i class="fas fa-check"></i> Use This Photo
+                            </button>
+                            <button id="retake_photo" type="button" class="btn btn-warning">
+                                <i class="fas fa-redo"></i> Retake
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Tip:</strong> For better recognition, add multiple face images from different angles and lighting conditions.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" form="addFaceForm">
+                    <i class="fas fa-save"></i> Save Image
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ user.name }}</strong>?</p>
+                <p>This action cannot be undone and will remove all face images associated with this user.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+{% endblock %}

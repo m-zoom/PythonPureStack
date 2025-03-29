@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>
+                    {% if user %}
+                    <i class="fas fa-user-edit"></i> Edit User
+                    {% else %}
+                    <i class="fas fa-user-plus"></i> Add New User
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" 
+                      action="{% if user %}{{ url_for('edit_user', user_id=user.id) }}{% else %}{{ url_for('add_user') }}{% endif %}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       value="{% if user %}{{ user.name }}{% endif %}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{% if user %}{{ user.email }}{% endif %}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="{% if user %}{{ user.phone }}{% endif %}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="details" class="form-label">Additional Details</label>
+                                <textarea class="form-control" id="details" name="details" rows="4">{% if user %}{{ user.details }}{% endif %}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if not user %}
+                            <div class="mb-3">
+                                <label for="face_image" class="form-label">Face Image</label>
+                                <div class="input-group mb-3">
+                                    <input type="file" class="form-control" id="face_image" name="face_image" accept="image/png, image/jpeg, image/jpg">
+                                    <button class="btn btn-outline-secondary" type="button" id="capture_button">
+                                        <i class="fas fa-camera"></i> Capture
+                                    </button>
+                                </div>
+                                <div class="form-text">Upload a clear front-facing photo of the person's face.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div id="webcam_container" class="d-none">
+                                    <video id="webcam" class="img-fluid rounded mb-2" autoplay></video>
+                                    <div class="d-flex justify-content-center">
+                                        <button id="take_photo" type="button" class="btn btn-primary me-2">
+                                            <i class="fas fa-camera"></i> Take Photo
+                                        </button>
+                                        <button id="cancel_photo" type="button" class="btn btn-secondary">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                                <canvas id="canvas" class="d-none"></canvas>
+                                <div id="preview_container" class="text-center d-none mt-3">
+                                    <img id="photo_preview" class="img-fluid rounded mb-2" src="" alt="Captured face">
+                                    <div>
+                                        <button id="use_photo" type="button" class="btn btn-success me-2">
+                                            <i class="fas fa-check"></i> Use This Photo
+                                        </button>
+                                        <button id="retake_photo" type="button" class="btn btn-warning">
+                                            <i class="fas fa-redo"></i> Retake
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle"></i> <strong>Important Notes:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Face images should be clear and well-lit</li>
+                                    <li>The person should be facing the camera directly</li>
+                                    <li>Avoid extreme angles or expressions</li>
+                                    <li>Multiple face images can be added later for better recognition</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <button type="submit" class="btn btn-primary">
+                            {% if user %}
+                            <i class="fas fa-save"></i> Update User
+                            {% else %}
+                            <i class="fas fa-user-plus"></i> Add User
+                            {% endif %}
+                        </button>
+                        <a href="{% if user %}{{ url_for('user_details', user_id=user.id) }}{% else %}{{ url_for('view_users') }}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not user %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+{% endif %}
+{% endblock %}
