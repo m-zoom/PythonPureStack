@@ -33,6 +33,14 @@ class FaceRecognition:
     def detect_faces(self, image_path):
         """Detect faces in an image and return list of face regions"""
         try:
+            # Handle image paths correctly for both local and Replit environments
+            if not os.path.exists(image_path):
+                # Try adding static/ prefix if needed
+                if not image_path.startswith('static/'):
+                    potential_path = os.path.join(os.path.dirname(__file__), 'static', image_path)
+                    if os.path.exists(potential_path):
+                        image_path = potential_path
+            
             # Read the image
             image = cv2.imread(image_path)
             if image is None:
@@ -96,7 +104,12 @@ class FaceRecognition:
         
         # Prepare training data
         for idx, face_image in enumerate(all_face_images):
-            image_path = os.path.join(os.path.dirname(__file__), face_image.image_path)
+            # Handle image paths correctly for both local and Replit environments
+            if face_image.image_path.startswith('static/'):
+                image_path = os.path.join(os.path.dirname(__file__), face_image.image_path)
+            else:
+                image_path = os.path.join(os.path.dirname(__file__), 'static', face_image.image_path)
+            
             extracted_face = self.extract_face(image_path)
             
             if extracted_face is not None:
