@@ -275,7 +275,7 @@ class FaceRecognition:
                                     'time_str': time_str,
                                     'user': user,
                                     'confidence': confidence,
-                                    'face_path': os.path.join('static/uploads', face_file),
+                                    'face_path': os.path.join('uploads', face_file),
                                     'face_position': (x, y, w, h)
                                 })
                         

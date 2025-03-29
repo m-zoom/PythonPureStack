@@ -161,7 +161,8 @@ def add_face(user_id):
         
         if len(faces) > 0:
             # Save the face image to the database
-            relative_path = os.path.join('static/uploads', unique_filename)
+            # Store the path without 'static/' prefix as it will be added by url_for in templates
+            relative_path = os.path.join('uploads', unique_filename)
             DatabaseManager.add_face_image(user_id, relative_path)
             
             # Retrain the model
@@ -229,8 +230,8 @@ def search():
                 confidence_threshold=confidence_threshold
             )
             
-            # Keep the uploaded file for display
-            search_image = os.path.join('static/uploads', unique_filename)
+            # Keep the uploaded file for display but store path without 'static/' prefix
+            search_image = os.path.join('uploads', unique_filename)
             
             return render_template('search.html', 
                                  matches=matches, 
@@ -262,6 +263,7 @@ def webcam_capture():
         os.remove(file_path)
         return jsonify({'error': 'No face detected'}), 400
     
+    # For client-side display, keep the full path
     relative_path = os.path.join('static/uploads', filename)
     
     return jsonify({
