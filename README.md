@@ -13,31 +13,55 @@ This is a sophisticated face recognition system built with Python and OpenCV tha
 
 Tech Stack
 Backend Framework: Flask
+
 Database: SQLite with SQLAlchemy ORM
+
 Face Recognition: OpenCV with LBPH Face Recognizer
+
 Frontend: HTML, CSS, JavaScript
+
 Server: Gunicorn
+
 Image Processing: NumPy, OpenCV
+
 Development Tools: Python 3.x
+
+
 Key Features
 Face detection and recognition
+
 User management system
+
 Real-time webcam capture
+
 Video analysis with face tracking
+
 Confidence-based matching
+
 Database storage for face images
+
 Training interface for the recognition model
+
 Setup Instructions
+
 Clone the repository
 
 Install required packages:
 
 Dependencies
+
 flask
+
 opencv-python
+
 numpy
+
 gunicorn
+
 flask-sqlalchemy
+
+use: pip install flask flask-sqlalchemy sqlalchemy opencv-contrib-python numpy werkzeug
+
 Ensure the following directory structure exists:
 static/
 ├── haarcascades/
