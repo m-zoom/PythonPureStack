@@ -17,8 +17,14 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key_for_development")
 
-# Configure the SQLite database
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///facial_recognition.db"
+# Configure the database (PostgreSQL or SQLite fallback)
+if os.environ.get('DATABASE_URL'):
+    # Use PostgreSQL database from environment variable
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL')
+else:
+    # Fallback to SQLite for development
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///facial_recognition.db"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
