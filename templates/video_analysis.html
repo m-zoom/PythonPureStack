@@ -41,6 +41,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Name</th>
+                                                <th>Relationship</th>
                                                 <th>First Seen</th>
                                                 <th>Last Seen</th>
                                                 <th>Appearances</th>
@@ -53,6 +54,13 @@
                                             <tr>
                                                 <td>{{ loop.index }}</td>
                                                 <td>{{ person.user.name }}</td>
+                                                <td>
+                                                    {% if person.user.relationship_type %}
+                                                    <span class="badge bg-info">{{ person.user.relationship_type }}</span>
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                </td>
                                                 <td>{{ person.first_seen|int // 60 }}:{{ "%02d"|format(person.first_seen|int % 60) }}</td>
                                                 <td>{{ person.last_seen|int // 60 }}:{{ "%02d"|format(person.last_seen|int % 60) }}</td>
                                                 <td>{{ person.total_appearances }}</td>
@@ -89,6 +97,9 @@
                                     <div class="timeline-item mb-2 p-2 border-start border-primary ps-3">
                                         <span class="badge bg-primary">{{ result.time_str }}</span>
                                         <span class="ms-2">{{ result.user.name }}</span>
+                                        {% if result.user.relationship_type %}
+                                        <span class="badge bg-info ms-1">{{ result.user.relationship_type }}</span>
+                                        {% endif %}
                                         <span class="badge bg-secondary ms-2">{{ result.confidence }}% match</span>
                                     </div>
                                     {% endfor %}

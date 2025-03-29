@@ -28,7 +28,7 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <h5 class="card-title">Personal Information</h5>
                         <table class="table">
                             <tr>
@@ -51,6 +51,12 @@
                                 <th>Last Updated:</th>
                                 <td>{{ user.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             </tr>
+                            {% if user.relationship_type %}
+                            <tr>
+                                <th>Relationship:</th>
+                                <td>{{ user.relationship_type }}</td>
+                            </tr>
+                            {% endif %}
                             {% if user.details %}
                             <tr>
                                 <th>Additional Details:</th>
@@ -60,7 +66,69 @@
                         </table>
                     </div>
                     
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Relatives</h5>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRelativeModal">
+                                <i class="fas fa-plus"></i> Add Relative
+                            </button>
+                        </div>
+                        
+                        {% if relatives %}
+                        <div class="list-group">
+                            {% for relative in relatives %}
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('user_details', user_id=relative.id) }}" class="text-decoration-none">
+                                    <div>
+                                        <strong>{{ relative.name }}</strong>
+                                        {% if relative.relationship_type %}
+                                        <div class="small text-muted">{{ relative.relationship_type }}</div>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" data-bs-target="#removeRelativeModal{{ relative.id }}">
+                                    <i class="fas fa-unlink"></i>
+                                </button>
+                                
+                                <!-- Remove Relative Modal -->
+                                <div class="modal fade" id="removeRelativeModal{{ relative.id }}" tabindex="-1" 
+                                     aria-labelledby="removeRelativeModalLabel{{ relative.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title" id="removeRelativeModalLabel{{ relative.id }}">
+                                                    <i class="fas fa-unlink"></i> Remove Relationship
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to remove the relationship between <strong>{{ user.name }}</strong> and <strong>{{ relative.name }}</strong>?</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times"></i> Cancel
+                                                </button>
+                                                <form action="{{ url_for('remove_relative', user_id=user.id, relative_id=relative.id) }}" method="post">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="fas fa-unlink"></i> Remove Relationship
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No relatives linked to this user yet.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-5">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">Face Images</h5>
                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFaceModal">
@@ -147,14 +215,28 @@
             <div class="modal-body">
                 <form id="addFaceForm" action="{{ url_for('add_face', user_id=user.id) }}" method="post" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="face_image" class="form-label">Upload Photo</label>
+                        <label for="face_image" class="form-label">Upload Photo(s)</label>
                         <div class="input-group mb-3">
-                            <input type="file" class="form-control" id="face_image" name="face_image" accept="image/png, image/jpeg, image/jpg" required>
+                            <input type="file" class="form-control" id="face_image" name="face_image" accept="image/png, image/jpeg, image/jpg" multiple>
                             <button class="btn btn-outline-secondary" type="button" id="capture_button">
                                 <i class="fas fa-camera"></i> Capture
                             </button>
                         </div>
-                        <div class="form-text">Upload a clear front-facing photo of the person's face.</div>
+                        <div class="form-text">Upload clear photos of the person's face. Select multiple files for batch upload.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="image_type" class="form-label">Image Type</label>
+                        <select class="form-select" id="image_type" name="image_type">
+                            <option value="profile" selected>Profile (Front View)</option>
+                            <option value="side">Side View</option>
+                            <option value="angle">Angled View</option>
+                            <option value="glasses">With Glasses</option>
+                            <option value="hat">With Hat/Head Covering</option>
+                            <option value="lighting">Different Lighting</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <div class="form-text">Categorizing images helps with recognition quality.</div>
                     </div>
                     
                     <div id="webcam_container" class="d-none mb-3">
@@ -193,6 +275,59 @@
                 </button>
                 <button type="submit" class="btn btn-primary" form="addFaceForm">
                     <i class="fas fa-save"></i> Save Image
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Relative Modal -->
+<div class="modal fade" id="addRelativeModal" tabindex="-1" aria-labelledby="addRelativeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addRelativeModalLabel">
+                    <i class="fas fa-user-plus"></i> Add Relative
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRelativeForm" action="{{ url_for('add_relative', user_id=user.id) }}" method="post">
+                    <div class="mb-3">
+                        <label for="relative_id" class="form-label">Select Person</label>
+                        <select class="form-select" id="relative_id" name="relative_id" required>
+                            <option value="">-- Select Person --</option>
+                            {% for other_user in all_users %}
+                                {% if other_user.id != user.id %}
+                                <option value="{{ other_user.id }}">{{ other_user.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="relationship_type" class="form-label">Relationship Type</label>
+                        <select class="form-select" id="relationship_type" name="relationship_type">
+                            <option value="">-- Select Relationship --</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Child">Child</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Extended Family">Extended Family</option>
+                            <option value="Friend">Friend</option>
+                            <option value="Colleague">Colleague</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="form-text">Specify the relationship between {{ user.name }} and the selected person.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" form="addRelativeForm">
+                    <i class="fas fa-link"></i> Add Relationship
                 </button>
             </div>
         </div>

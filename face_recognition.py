@@ -6,7 +6,8 @@ from database import DatabaseManager
 
 class FaceRecognition:
     def __init__(self):
-        # Load the face detector
+        """Initialize face recognition with improved detection methods"""
+        # Load the Haar cascade for legacy support and faster initial detection
         self.cascade_path = os.path.join(os.path.dirname(__file__), 'static', 'haarcascades', 'haarcascade_frontalface_default.xml')
         self.face_cascade = cv2.CascadeClassifier(self.cascade_path)
         logging.debug(f"Loading face cascade from: {self.cascade_path}")
@@ -14,8 +15,35 @@ class FaceRecognition:
             logging.error(f"Error loading cascade classifier from {self.cascade_path}")
             raise Exception(f"Failed to load Haar cascade from {self.cascade_path}")
         
-        # Initialize the face recognizer
-        self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+        # Configure advanced DNN-based face detector for better accuracy
+        self.use_dnn_detection = True
+        try:
+            # Load the DNN face detector model
+            model_file = os.path.join(os.path.dirname(__file__), 'static/models', 'opencv_face_detector_uint8.pb')
+            config_file = os.path.join(os.path.dirname(__file__), 'static/models', 'opencv_face_detector.pbtxt')
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(model_file), exist_ok=True)
+            
+            # Check if model files exist, download them if not
+            if not os.path.exists(model_file) or not os.path.exists(config_file):
+                logging.warning("DNN model files not found. Using Haar cascade for detection.")
+                self.use_dnn_detection = False
+            else:
+                self.face_net = cv2.dnn.readNetFromTensorflow(model_file, config_file)
+                logging.info("Loaded DNN face detector model")
+        except Exception as e:
+            logging.error(f"Error loading DNN face detector: {str(e)}")
+            self.use_dnn_detection = False
+        
+        # Initialize the face recognizer - LBPH for better handling of different lighting conditions
+        self.recognizer = cv2.face.LBPHFaceRecognizer_create(
+            radius=2,        # Increased radius for more detail
+            neighbors=16,    # More neighbors for better accuracy 
+            grid_x=8,        # More grid cells for better spatial representation
+            grid_y=8,        # More grid cells for better spatial representation
+            threshold=80     # Lower threshold for accepting matches
+        )
         
         # Path to save trained model
         self.model_path = os.path.join(os.path.dirname(__file__), 'static/models', 'trained_model.yml')
@@ -31,7 +59,11 @@ class FaceRecognition:
                 logging.error(f"Error loading model: {str(e)}")
     
     def detect_faces(self, image_path):
-        """Detect faces in an image and return list of face regions"""
+        """
+        Detect faces in an image using advanced methods
+        Uses DNN-based detector when available, falls back to Haar cascade
+        Returns list of face regions and the processed grayscale image
+        """
         try:
             # Normalize path separators to forward slashes for web URLs
             image_path = image_path.replace('\\', '/')
@@ -49,19 +81,63 @@ class FaceRecognition:
             if image is None:
                 logging.error(f"Failed to load image: {image_path}")
                 return [], None
+                
+            # Get image dimensions
+            height, width = image.shape[:2]
             
-            # Convert to grayscale
+            # Convert to grayscale for Haar cascade and LBPH
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             
-            # Detect faces
-            faces = self.face_cascade.detectMultiScale(
+            # Apply face detection
+            faces = []
+            
+            # Try DNN-based detection first (better for different poses and angles)
+            if self.use_dnn_detection:
+                try:
+                    # Prepare the image for DNN detection
+                    blob = cv2.dnn.blobFromImage(image, 1.0, (300, 300), [104, 117, 123], False, False)
+                    self.face_net.setInput(blob)
+                    detections = self.face_net.forward()
+                    
+                    # Process detections
+                    for i in range(detections.shape[2]):
+                        confidence = detections[0, 0, i, 2]
+                        
+                        # Filter by confidence
+                        if confidence > 0.7:  # High confidence threshold for DNN
+                            # Get box coordinates
+                            box = detections[0, 0, i, 3:7] * np.array([width, height, width, height])
+                            x1, y1, x2, y2 = box.astype(int)
+                            
+                            # Convert to x, y, w, h format for compatibility
+                            faces.append((x1, y1, x2-x1, y2-y1))
+                    
+                    # If DNN found faces, return them
+                    if len(faces) > 0:
+                        logging.debug(f"DNN detector found {len(faces)} faces")
+                        return faces, gray
+                        
+                except Exception as e:
+                    logging.error(f"Error in DNN face detection: {str(e)}")
+                    # Continue to Haar cascade as fallback
+            
+            # Fall back to Haar cascade for detection
+            cascade_faces = self.face_cascade.detectMultiScale(
                 gray,
                 scaleFactor=1.1,
                 minNeighbors=5,
-                minSize=(30, 30)
+                minSize=(30, 30),
+                flags=cv2.CASCADE_SCALE_IMAGE
             )
             
-            return faces, gray
+            # If Haar cascade found faces, use them
+            if len(cascade_faces) > 0:
+                logging.debug(f"Haar cascade found {len(cascade_faces)} faces")
+                return cascade_faces, gray
+                
+            # If no faces were found by either method
+            return [], gray
+            
         except Exception as e:
             logging.error(f"Error detecting faces: {str(e)}")
             return [], None

@@ -39,6 +39,22 @@
                             </div>
                             
                             <div class="mb-3">
+                                <label for="relationship_type" class="form-label">Relationship Type</label>
+                                <select class="form-select" id="relationship_type" name="relationship_type">
+                                    <option value="">-- Select Relationship (Optional) --</option>
+                                    <option value="Parent" {% if user and user.relationship_type == 'Parent' %}selected{% endif %}>Parent</option>
+                                    <option value="Child" {% if user and user.relationship_type == 'Child' %}selected{% endif %}>Child</option>
+                                    <option value="Sibling" {% if user and user.relationship_type == 'Sibling' %}selected{% endif %}>Sibling</option>
+                                    <option value="Spouse" {% if user and user.relationship_type == 'Spouse' %}selected{% endif %}>Spouse</option>
+                                    <option value="Extended Family" {% if user and user.relationship_type == 'Extended Family' %}selected{% endif %}>Extended Family</option>
+                                    <option value="Friend" {% if user and user.relationship_type == 'Friend' %}selected{% endif %}>Friend</option>
+                                    <option value="Colleague" {% if user and user.relationship_type == 'Colleague' %}selected{% endif %}>Colleague</option>
+                                    <option value="Other" {% if user and user.relationship_type == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                                <div class="form-text">Optional: specify the relationship type for this person.</div>
+                            </div>
+                            
+                            <div class="mb-3">
                                 <label for="details" class="form-label">Additional Details</label>
                                 <textarea class="form-control" id="details" name="details" rows="4">{% if user %}{{ user.details }}{% endif %}</textarea>
                             </div>

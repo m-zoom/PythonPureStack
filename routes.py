@@ -34,8 +34,22 @@ def user_details(user_id):
         flash('User not found', 'danger')
         return redirect(url_for('view_users'))
     
+    # Get face images
     face_images = DatabaseManager.get_user_face_images(user_id)
-    return render_template('user_details.html', user=user, face_images=face_images)
+    
+    # Get relatives
+    relatives = DatabaseManager.get_user_relatives(user_id)
+    
+    # Get all users for the add relative form
+    all_users = DatabaseManager.get_all_users()
+    
+    return render_template(
+        'user_details.html', 
+        user=user, 
+        face_images=face_images,
+        relatives=relatives,
+        all_users=all_users
+    )
 
 @app.route('/users/add', methods=['GET', 'POST'])
 def add_user():
@@ -44,13 +58,20 @@ def add_user():
         email = request.form.get('email')
         phone = request.form.get('phone')
         details = request.form.get('details')
+        relationship_type = request.form.get('relationship_type')
         
         if not name:
             flash('Name is required', 'danger')
             return render_template('add_user.html')
         
         try:
-            user = DatabaseManager.add_user(name=name, email=email, phone=phone, details=details)
+            user = DatabaseManager.add_user(
+                name=name, 
+                email=email, 
+                phone=phone, 
+                details=details, 
+                relationship_type=relationship_type
+            )
             
             # Handle face image upload
             if 'face_image' in request.files:
@@ -95,6 +116,7 @@ def edit_user(user_id):
         email = request.form.get('email')
         phone = request.form.get('phone')
         details = request.form.get('details')
+        relationship_type = request.form.get('relationship_type')
         
         if not name:
             flash('Name is required', 'danger')
@@ -106,7 +128,8 @@ def edit_user(user_id):
                 name=name,
                 email=email,
                 phone=phone,
-                details=details
+                details=details,
+                relationship_type=relationship_type
             )
             
             if success:
@@ -144,37 +167,55 @@ def add_face(user_id):
         flash('No file part', 'danger')
         return redirect(url_for('user_details', user_id=user_id))
     
-    file = request.files['face_image']
+    # Get the image type from the form
+    image_type = request.form.get('image_type', 'profile')
     
-    if file.filename == '':
+    # Handle multiple file uploads
+    files = request.files.getlist('face_image')
+    
+    if not files or files[0].filename == '':
         flash('No selected file', 'danger')
         return redirect(url_for('user_details', user_id=user_id))
     
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        unique_filename = f"{uuid.uuid4()}_{filename}"
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
-        
-        # Detect face in the uploaded image
-        faces, _ = face_recognition.detect_faces(file_path)
-        
-        if len(faces) > 0:
-            # Save the face image to the database with full relative path
-            # For local development compatibility, include the 'static/' prefix
-            # Use forward slashes for web URLs, regardless of the OS
-            relative_path = 'static/uploads/' + unique_filename
-            DatabaseManager.add_face_image(user_id, relative_path)
+    successful_uploads = 0
+    failed_uploads = 0
+    
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+            file.save(file_path)
             
-            # Retrain the model
-            face_recognition.train_model()
+            # Detect face in the uploaded image
+            faces, _ = face_recognition.detect_faces(file_path)
             
+            if len(faces) > 0:
+                # Save the face image to the database with full relative path
+                # For local development compatibility, include the 'static/' prefix
+                # Use forward slashes for web URLs, regardless of the OS
+                relative_path = 'static/uploads/' + unique_filename
+                DatabaseManager.add_face_image(user_id, relative_path, image_type)
+                successful_uploads += 1
+            else:
+                flash(f'No face detected in file: {filename}', 'warning')
+                os.remove(file_path)
+                failed_uploads += 1
+        else:
+            flash(f'Invalid file type: {file.filename}', 'warning')
+            failed_uploads += 1
+    
+    # Retrain the model if any images were uploaded successfully
+    if successful_uploads > 0:
+        face_recognition.train_model()
+        
+        if successful_uploads == 1:
             flash('Face image added successfully', 'success')
         else:
-            flash('No face detected in the uploaded image', 'warning')
-            os.remove(file_path)
-    else:
-        flash('Invalid file type', 'danger')
+            flash(f'{successful_uploads} face images added successfully', 'success')
+    
+    if failed_uploads > 0:
+        flash(f'{failed_uploads} uploads failed', 'warning')
     
     return redirect(url_for('user_details', user_id=user_id))
 
@@ -284,6 +325,63 @@ def train_model():
         flash('Error training model or not enough face data', 'danger')
     
     return redirect(url_for('index'))
+
+@app.route('/users/<int:user_id>/add_relative', methods=['POST'])
+def add_relative(user_id):
+    """Add a relative to a user"""
+    user = DatabaseManager.get_user(user_id)
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('view_users'))
+    
+    relative_id = request.form.get('relative_id')
+    relationship_type = request.form.get('relationship_type')
+    
+    if not relative_id:
+        flash('No relative selected', 'danger')
+        return redirect(url_for('user_details', user_id=user_id))
+    
+    # Convert to integer
+    try:
+        relative_id = int(relative_id)
+    except ValueError:
+        flash('Invalid relative ID', 'danger')
+        return redirect(url_for('user_details', user_id=user_id))
+    
+    # Check if trying to add self as relative
+    if relative_id == user_id:
+        flash('Cannot add yourself as a relative', 'danger')
+        return redirect(url_for('user_details', user_id=user_id))
+    
+    # Add the relationship
+    success = DatabaseManager.add_relative(user_id, relative_id, relationship_type)
+    
+    if success:
+        relative = DatabaseManager.get_user(relative_id)
+        flash(f'Successfully added {relative.name} as a relative', 'success')
+    else:
+        flash('Error adding relative', 'danger')
+    
+    return redirect(url_for('user_details', user_id=user_id))
+
+@app.route('/users/<int:user_id>/remove_relative/<int:relative_id>', methods=['POST'])
+def remove_relative(user_id, relative_id):
+    """Remove a relative from a user"""
+    user = DatabaseManager.get_user(user_id)
+    relative = DatabaseManager.get_user(relative_id)
+    
+    if not user or not relative:
+        flash('User or relative not found', 'danger')
+        return redirect(url_for('view_users'))
+    
+    success = DatabaseManager.remove_relative(user_id, relative_id)
+    
+    if success:
+        flash(f'Successfully removed {relative.name} as a relative', 'success')
+    else:
+        flash('Error removing relative', 'danger')
+    
+    return redirect(url_for('user_details', user_id=user_id))
 
 @app.route('/video_analysis', methods=['GET', 'POST'])
 def video_analysis():
