@@ -1,3 +1,0 @@
-[workflow]
-name = "main"
-command = "python main.py"
