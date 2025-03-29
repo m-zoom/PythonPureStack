@@ -1,11 +1,19 @@
 import os
 import logging
 from flask import Flask
+from markupsafe import Markup
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Custom Jinja2 filters
+def nl2br(value):
+    """Convert newlines to <br> tags."""
+    if value:
+        return Markup(value.replace('\n', '<br>'))
+    return value
 
 # Setup the database
 class Base(DeclarativeBase):
@@ -16,6 +24,9 @@ db = SQLAlchemy(model_class=Base)
 # Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key_for_development")
+
+# Register Jinja2 filters
+app.jinja_env.filters['nl2br'] = nl2br
 
 # Configure the database (PostgreSQL or SQLite fallback)
 if os.environ.get('DATABASE_URL'):
