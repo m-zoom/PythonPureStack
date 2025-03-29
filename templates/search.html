@@ -132,9 +132,9 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for idx, match in enumerate(matches) %}
+                                    {% for match in matches %}
                                     <tr>
-                                        <td>{{ idx + 1 }}</td>
+                                        <td>{{ loop.index }}</td>
                                         <td>{{ match['user'].name }}</td>
                                         <td>
                                             <div class="progress" style="height: 20px;">
