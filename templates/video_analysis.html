@@ -118,8 +118,8 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="confidence_threshold" class="form-label">Confidence Threshold: <span id="threshold_value">50%</span></label>
-                                            <input type="range" class="form-range" min="10" max="90" step="5" value="50" id="confidence_threshold" name="confidence_threshold">
+                                            <label for="confidence_threshold" class="form-label">Confidence Threshold: <span id="threshold_value">{{ confidence_threshold|default(50) }}%</span></label>
+                                            <input type="range" class="form-range" min="10" max="90" step="5" value="{{ confidence_threshold|default(50) }}" id="confidence_threshold" name="confidence_threshold">
                                             <div class="form-text">Higher values will show only more confident matches</div>
                                         </div>
                                     </div>

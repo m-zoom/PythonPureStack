@@ -1,6 +1,95 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% if search_image and matches is defined %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header {% if matches %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h4>
+                    {% if matches %}
+                    <i class="fas fa-check-circle"></i> Match Results ({{ matches|length }} found)
+                    {% else %}
+                    <i class="fas fa-times-circle"></i> No Matches Found
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Search Image</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <img src="{{ url_for('static', filename=search_image.replace('static/', '')) }}" 
+                                     class="img-fluid rounded" alt="Search Image">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        {% if matches %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Name</th>
+                                        <th>Confidence</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for match in matches %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ match['user'].name }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar 
+                                                            {% if match['confidence'] >= 80 %}bg-success
+                                                            {% elif match['confidence'] >= 60 %}bg-info
+                                                            {% elif match['confidence'] >= 40 %}bg-warning
+                                                            {% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ match['confidence'] }}%;" 
+                                                     aria-valuenow="{{ match['confidence'] }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ match['confidence'] }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('user_details', user_id=match['user'].id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-user"></i> View Profile
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                            <h4>No Matching Faces Found</h4>
+                            <p>Try adjusting the confidence threshold or using a different image.</p>
+                            <p>If this person should be in the system, consider adding them as a new user.</p>
+                            <a href="{{ url_for('add_user') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-user-plus"></i> Add New User
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-12 mb-4">
         <div class="card">
@@ -91,95 +180,6 @@
         </div>
     </div>
 </div>
-
-{% if search_image and matches is defined %}
-<div class="row mt-2">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header {% if matches %}bg-success{% else %}bg-danger{% endif %} text-white">
-                <h4>
-                    {% if matches %}
-                    <i class="fas fa-check-circle"></i> Match Results ({{ matches|length }} found)
-                    {% else %}
-                    <i class="fas fa-times-circle"></i> No Matches Found
-                    {% endif %}
-                </h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card mb-4">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0">Search Image</h5>
-                            </div>
-                            <div class="card-body text-center">
-                                <img src="{{ url_for('static', filename=search_image.replace('static/', '')) }}" 
-                                     class="img-fluid rounded" alt="Search Image">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-8">
-                        {% if matches %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>Name</th>
-                                        <th>Confidence</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for match in matches %}
-                                    <tr>
-                                        <td>{{ loop.index }}</td>
-                                        <td>{{ match['user'].name }}</td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar 
-                                                            {% if match['confidence'] >= 80 %}bg-success
-                                                            {% elif match['confidence'] >= 60 %}bg-info
-                                                            {% elif match['confidence'] >= 40 %}bg-warning
-                                                            {% else %}bg-danger{% endif %}" 
-                                                     role="progressbar" 
-                                                     style="width: {{ match['confidence'] }}%;" 
-                                                     aria-valuenow="{{ match['confidence'] }}" 
-                                                     aria-valuemin="0" 
-                                                     aria-valuemax="100">
-                                                    {{ match['confidence'] }}%
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <a href="{{ url_for('user_details', user_id=match['user'].id) }}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-user"></i> View Profile
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-warning text-center">
-                            <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
-                            <h4>No Matching Faces Found</h4>
-                            <p>Try adjusting the confidence threshold or using a different image.</p>
-                            <p>If this person should be in the system, consider adding them as a new user.</p>
-                            <a href="{{ url_for('add_user') }}" class="btn btn-primary mt-2">
-                                <i class="fas fa-user-plus"></i> Add New User
-                            </a>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
