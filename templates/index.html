@@ -1,87 +1,111 @@
 {% extends 'base.html' %}
 
+{% block title %}Federal Biometrics of Nigeria - Home{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-12 text-center mb-4">
-        <h1 class="display-4">Federal Biometrics of Nigeria (FBN)</h1>
-        <p class="lead">Nigeria's premier facial recognition and identity management system</p>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-user-plus fa-3x mb-3 text-primary"></i>
-                <h3 class="card-title">Add Users</h3>
-                <p class="card-text">Add new users to the facial recognition database with personalized information.</p>
-                <a href="{{ url_for('add_user') }}" class="btn btn-primary">Add User</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-3x mb-3 text-success"></i>
-                <h3 class="card-title">Manage Users</h3>
-                <p class="card-text">View and manage existing users and their facial images in the system.</p>
-                <a href="{{ url_for('view_users') }}" class="btn btn-success">View Users</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-search fa-3x mb-3 text-info"></i>
-                <h3 class="card-title">Face Search</h3>
-                <p class="card-text">Upload a face image to search for matching identities in the database.</p>
-                <a href="{{ url_for('search') }}" class="btn btn-info">Search Faces</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-video fa-3x mb-3 text-warning"></i>
-                <h3 class="card-title">Video Analysis</h3>
-                <p class="card-text">Analyze videos to identify people appearing throughout the footage.</p>
-                <a href="{{ url_for('video_analysis') }}" class="btn btn-warning">Analyze Videos</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h4>About This System</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        <i class="fas fa-cogs fa-5x mb-3 text-secondary"></i>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg border-0 mb-5">
+                <div class="card-header bg-primary text-white py-3">
+                    <h1 class="display-5 text-center mb-0">
+                        <i class="fas fa-id-card me-2"></i> Federal Biometrics of Nigeria
+                    </h1>
+                </div>
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Advanced Facial Recognition System</h2>
+                    
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-search me-2 text-primary"></i> Recognition Features
+                                    </h3>
+                                    <ul class="list-group list-group-flush mt-3">
+                                        <li class="list-group-item">Enhanced face detection in various conditions</li>
+                                        <li class="list-group-item">Intelligent matching with confidence scoring</li>
+                                        <li class="list-group-item">Search by facial similarity and relationships</li>
+                                        <li class="list-group-item">Video analysis with timestamp identification</li>
+                                    </ul>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="{{ url_for('search') }}" class="btn btn-primary w-100">
+                                        <i class="fas fa-camera"></i> Start Face Search
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-users me-2 text-success"></i> User Management
+                                    </h3>
+                                    <ul class="list-group list-group-flush mt-3">
+                                        <li class="list-group-item">Register and manage user profiles</li>
+                                        <li class="list-group-item">Add multiple facial images per user</li>
+                                        <li class="list-group-item">Track relationships and associations</li>
+                                        <li class="list-group-item">Maintain contact and personal details</li>
+                                    </ul>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{{ url_for('add_user') }}" class="btn btn-success flex-grow-1 me-2">
+                                            <i class="fas fa-user-plus"></i> Add User
+                                        </a>
+                                        <a href="{{ url_for('view_users') }}" class="btn btn-outline-primary flex-grow-1">
+                                            <i class="fas fa-list"></i> View All
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-8">
-                        <h5>Key Features:</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card text-center shadow-sm mb-4 h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-image text-info fa-3x mb-3"></i>
+                                    <h4>Face Search</h4>
+                                    <p>Upload an image to find matching individuals in the database</p>
+                                    <a href="{{ url_for('search') }}" class="btn btn-info">Search Faces</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center shadow-sm mb-4 h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-video text-warning fa-3x mb-3"></i>
+                                    <h4>Video Analysis</h4>
+                                    <p>Analyze videos to identify individuals with timestamps</p>
+                                    <a href="{{ url_for('video_analysis') }}" class="btn btn-warning text-dark">Analyze Video</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center shadow-sm mb-4 h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-brain text-danger fa-3x mb-3"></i>
+                                    <h4>Train Model</h4>
+                                    <p>Update the recognition model with new faces</p>
+                                    <form action="{{ url_for('train_model') }}" method="post">
+                                        <button type="submit" class="btn btn-danger">Train Model</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading"><i class="fas fa-info-circle"></i> Quick Tips</h4>
                         <ul>
-                            <li>Face detection using OpenCV Haar cascades</li>
-                            <li>Face recognition with LBPH Face Recognizer</li>
-                            <li>User management with detailed profiles</li>
-                            <li>Multiple face images per user for improved accuracy</li>
-                            <li>Adjustable confidence threshold for recognition</li>
-                            <li>Video analysis for identifying people in footage</li>
-                            <li>Timeline tracking of appearances in videos</li>
+                            <li>For best results, add multiple face images for each user</li>
+                            <li>Train the model after adding new users or face images</li>
+                            <li>Lower the confidence threshold to find more potential matches</li>
+                            <li>Add relationship information to improve identification accuracy</li>
                         </ul>
-                        <form action="{{ url_for('train_model') }}" method="post" class="mt-3">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="fas fa-sync-alt"></i> Retrain Recognition Model
-                            </button>
-                            <small class="form-text text-muted">Click to update the recognition model with all current faces in the database.</small>
-                        </form>
                     </div>
                 </div>
             </div>

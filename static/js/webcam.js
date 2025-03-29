@@ -1,135 +1,169 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Elements
-    const captureButton = document.getElementById('capture_button');
-    const webcamContainer = document.getElementById('webcam_container');
-    const webcam = document.getElementById('webcam');
-    const takePhotoButton = document.getElementById('take_photo');
-    const cancelPhotoButton = document.getElementById('cancel_photo');
+    // Get elements
+    const webcamModal = document.getElementById('webcamModal');
+    const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
-    const previewContainer = document.getElementById('preview_container');
-    const photoPreview = document.getElementById('photo_preview');
-    const usePhotoButton = document.getElementById('use_photo');
-    const retakePhotoButton = document.getElementById('retake_photo');
-    const fileInput = document.getElementById('face_image');
+    const capturedImage = document.getElementById('capturedImage');
+    const toggleWebcamButton = document.getElementById('toggleWebcam');
+    const captureButton = document.getElementById('captureButton');
+    const usePhotoButton = document.getElementById('usePhotoButton');
+    const webcamButtonText = document.getElementById('webcamButtonText');
     
+    // Variables
     let stream = null;
+    let webcamActive = false;
+    let photoTaken = false;
     
-    // Start webcam
-    function startWebcam() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            webcamContainer.classList.remove('d-none');
-            fileInput.classList.add('d-none');
-            
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    webcam.srcObject = stream;
-                    webcam.play();
-                })
-                .catch(function(error) {
-                    console.error('Error accessing webcam:', error);
-                    alert('Could not access the webcam. Please ensure you have given permission to use the camera and try again.');
-                    stopWebcam();
-                });
+    // Initialize Bootstrap modal
+    const modal = new bootstrap.Modal(webcamModal);
+    
+    // Show the webcam modal when 'Use Webcam' button is clicked
+    const webcamLinks = document.querySelectorAll('a[href^="/api/webcam_capture"]');
+    webcamLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            modal.show();
+            if (!webcamActive) {
+                webcamButtonText.textContent = 'Start Camera';
+                toggleWebcamButton.classList.remove('btn-danger');
+                toggleWebcamButton.classList.add('btn-secondary');
+            }
+        });
+    });
+    
+    // Toggle webcam
+    toggleWebcamButton.addEventListener('click', function() {
+        if (webcamActive) {
+            stopWebcam();
         } else {
-            alert('Your browser does not support webcam access. Please try using a different browser or upload an image instead.');
+            startWebcam();
         }
+    });
+    
+    // Take photo
+    captureButton.addEventListener('click', function() {
+        takePhoto();
+    });
+    
+    // Use photo
+    usePhotoButton.addEventListener('click', function() {
+        usePhoto();
+    });
+    
+    // Function to start webcam
+    function startWebcam() {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(function(mediaStream) {
+                stream = mediaStream;
+                video.srcObject = stream;
+                video.play();
+                webcamActive = true;
+                
+                // Show video, hide captured image
+                video.classList.remove('d-none');
+                capturedImage.classList.add('d-none');
+                
+                // Update button states
+                captureButton.disabled = false;
+                usePhotoButton.disabled = true;
+                toggleWebcamButton.textContent = 'Stop Camera';
+                toggleWebcamButton.classList.remove('btn-secondary');
+                toggleWebcamButton.classList.add('btn-danger');
+                
+                photoTaken = false;
+            })
+            .catch(function(error) {
+                console.error('Error accessing webcam:', error);
+                alert('Error accessing webcam. Please make sure your camera is enabled and try again.');
+            });
     }
     
-    // Stop webcam
+    // Function to stop webcam
     function stopWebcam() {
         if (stream) {
-            stream.getTracks().forEach(function(track) {
-                track.stop();
-            });
+            stream.getTracks().forEach(track => track.stop());
             stream = null;
         }
         
-        webcamContainer.classList.add('d-none');
-        fileInput.classList.remove('d-none');
+        webcamActive = false;
+        
+        // Update button states
+        captureButton.disabled = true;
+        webcamButtonText.textContent = 'Start Camera';
+        toggleWebcamButton.classList.remove('btn-danger');
+        toggleWebcamButton.classList.add('btn-secondary');
+        
+        if (!photoTaken) {
+            usePhotoButton.disabled = true;
+        }
     }
     
-    // Take photo from webcam
+    // Function to take a photo
     function takePhoto() {
+        if (!webcamActive) return;
+        
         const context = canvas.getContext('2d');
         
-        // Set canvas dimensions to match webcam
-        canvas.width = webcam.videoWidth;
-        canvas.height = webcam.videoHeight;
-        
-        // Draw the current webcam frame to the canvas
-        context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+        // Draw current video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         // Convert canvas to data URL
-        const dataURL = canvas.toDataURL('image/jpeg');
+        const imageDataURL = canvas.toDataURL('image/jpeg');
         
-        // Show the preview
-        photoPreview.src = dataURL;
-        webcamContainer.classList.add('d-none');
-        previewContainer.classList.remove('d-none');
-    }
-    
-    // Use the captured photo
-    function usePhoto() {
-        // Convert data URL to Blob
-        const dataURL = photoPreview.src;
-        const byteString = atob(dataURL.split(',')[1]);
-        const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
+        // Show captured image, hide video
+        capturedImage.src = imageDataURL;
+        capturedImage.classList.remove('d-none');
+        video.classList.add('d-none');
         
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
+        // Update button states
+        usePhotoButton.disabled = false;
+        captureButton.disabled = true;
         
-        const blob = new Blob([ab], { type: mimeString });
+        photoTaken = true;
         
-        // Create a File object
-        const fileName = `webcam_capture_${new Date().getTime()}.jpg`;
-        const file = new File([blob], fileName, { type: 'image/jpeg' });
-        
-        // Create a new FileList
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        
-        // Set the file input's files
-        fileInput.files = dataTransfer.files;
-        
-        // Clean up
-        previewContainer.classList.add('d-none');
-        fileInput.classList.remove('d-none');
+        // Stop the webcam
         stopWebcam();
-        
-        // Optionally, for forms that don't have a separate submit button
-        // and rely on the file input change event, trigger it
-        const event = new Event('change', { bubbles: true });
-        fileInput.dispatchEvent(event);
     }
     
-    // Event listeners
-    if (captureButton) {
-        captureButton.addEventListener('click', startWebcam);
+    // Function to use the captured photo
+    function usePhoto() {
+        // Convert canvas data to blob
+        canvas.toBlob(function(blob) {
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', blob, 'webcam_capture.jpg');
+            
+            // Upload image
+            fetch('/api/webcam_capture', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    modal.hide();
+                    
+                    // Redirect to search page with the captured image
+                    window.location.href = '/search?image=' + encodeURIComponent(data.file_path);
+                } else {
+                    alert(data.error || 'Error uploading image');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error uploading image. Please try again.');
+            });
+        }, 'image/jpeg', 0.9);
     }
     
-    if (takePhotoButton) {
-        takePhotoButton.addEventListener('click', takePhoto);
-    }
-    
-    if (cancelPhotoButton) {
-        cancelPhotoButton.addEventListener('click', stopWebcam);
-    }
-    
-    if (usePhotoButton) {
-        usePhotoButton.addEventListener('click', usePhoto);
-    }
-    
-    if (retakePhotoButton) {
-        retakePhotoButton.addEventListener('click', function() {
-            previewContainer.classList.add('d-none');
-            webcamContainer.classList.remove('d-none');
-        });
-    }
-    
-    // Clean up when leaving the page
-    window.addEventListener('beforeunload', stopWebcam);
+    // Clean up when modal is hidden
+    webcamModal.addEventListener('hidden.bs.modal', function() {
+        if (webcamActive) {
+            stopWebcam();
+        }
+        photoTaken = false;
+        capturedImage.classList.add('d-none');
+        video.classList.remove('d-none');
+    });
 });

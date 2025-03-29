@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import logging
+import base64
 from database import DatabaseManager
 
 class FaceRecognition:
@@ -18,31 +19,35 @@ class FaceRecognition:
         # Configure advanced DNN-based face detector for better accuracy
         self.use_dnn_detection = True
         try:
-            # Load the DNN face detector model
-            model_file = os.path.join(os.path.dirname(__file__), 'static/models', 'opencv_face_detector_uint8.pb')
-            config_file = os.path.join(os.path.dirname(__file__), 'static/models', 'opencv_face_detector.pbtxt')
+            # Define model paths
+            model_dir = os.path.join(os.path.dirname(__file__), 'static/models')
+            os.makedirs(model_dir, exist_ok=True)
             
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(model_file), exist_ok=True)
+            model_file = os.path.join(model_dir, 'opencv_face_detector_uint8.pb')
+            config_file = os.path.join(model_dir, 'opencv_face_detector.pbtxt')
             
-            # Check if model files exist, download them if not
-            if not os.path.exists(model_file) or not os.path.exists(config_file):
+            # Check if model files exist
+            if not os.path.exists(model_file):
                 logging.warning("DNN model files not found. Using Haar cascade for detection.")
                 self.use_dnn_detection = False
             else:
-                self.face_net = cv2.dnn.readNetFromTensorflow(model_file, config_file)
-                logging.info("Loaded DNN face detector model")
+                try:
+                    self.face_net = cv2.dnn.readNetFromTensorflow(model_file, config_file)
+                    logging.info("Loaded DNN face detector model")
+                except Exception as e:
+                    logging.error(f"Error loading DNN face detector: {str(e)}")
+                    self.use_dnn_detection = False
         except Exception as e:
-            logging.error(f"Error loading DNN face detector: {str(e)}")
+            logging.error(f"Error setting up DNN detection: {str(e)}")
             self.use_dnn_detection = False
         
         # Initialize the face recognizer - LBPH for better handling of different lighting conditions
         self.recognizer = cv2.face.LBPHFaceRecognizer_create(
-            radius=2,        # Increased radius for more detail
-            neighbors=16,    # More neighbors for better accuracy 
+            radius=1,        # Increased radius for more detail
+            neighbors=8,    # More neighbors for better accuracy 
             grid_x=8,        # More grid cells for better spatial representation
             grid_y=8,        # More grid cells for better spatial representation
-            threshold=80     # Lower threshold for accepting matches
+            threshold=70     # Lower threshold for accepting matches
         )
         
         # Path to save trained model
@@ -88,6 +93,9 @@ class FaceRecognition:
             # Convert to grayscale for Haar cascade and LBPH
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             
+            # Apply histogram equalization to improve detection in different lighting
+            gray = cv2.equalizeHist(gray)
+            
             # Apply face detection
             faces = []
             
@@ -103,11 +111,17 @@ class FaceRecognition:
                     for i in range(detections.shape[2]):
                         confidence = detections[0, 0, i, 2]
                         
-                        # Filter by confidence
-                        if confidence > 0.7:  # High confidence threshold for DNN
+                        # Filter by confidence - use lower threshold to catch more potential faces
+                        if confidence > 0.5:  # Lower threshold for better sensitivity
                             # Get box coordinates
                             box = detections[0, 0, i, 3:7] * np.array([width, height, width, height])
                             x1, y1, x2, y2 = box.astype(int)
+                            
+                            # Ensure coordinates are within image bounds
+                            x1 = max(0, x1)
+                            y1 = max(0, y1)
+                            x2 = min(width, x2)
+                            y2 = min(height, y2)
                             
                             # Convert to x, y, w, h format for compatibility
                             faces.append((x1, y1, x2-x1, y2-y1))
@@ -121,14 +135,51 @@ class FaceRecognition:
                     logging.error(f"Error in DNN face detection: {str(e)}")
                     # Continue to Haar cascade as fallback
             
-            # Fall back to Haar cascade for detection
-            cascade_faces = self.face_cascade.detectMultiScale(
+            # Fall back to enhanced Haar cascade for detection
+            # Try multiple scales and parameters for better detection
+            # Use a combination of parameters to find faces
+            cascade_faces = []
+            
+            # First attempt with standard parameters
+            faces1 = self.face_cascade.detectMultiScale(
                 gray,
                 scaleFactor=1.1,
                 minNeighbors=5,
                 minSize=(30, 30),
                 flags=cv2.CASCADE_SCALE_IMAGE
             )
+            
+            if len(faces1) > 0:
+                cascade_faces.extend(faces1)
+            
+            # Second attempt with more aggressive scaling but higher threshold
+            faces2 = self.face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.05,  # More gradual scaling
+                minNeighbors=3,    # Lower threshold for detection
+                minSize=(20, 20),  # Smaller faces
+                flags=cv2.CASCADE_SCALE_IMAGE
+            )
+            
+            # Add new faces not already detected
+            for face in faces2:
+                is_duplicate = False
+                for existing_face in cascade_faces:
+                    # Check if there's significant overlap
+                    x1, y1, w1, h1 = face
+                    x2, y2, w2, h2 = existing_face
+                    
+                    # Calculate overlap
+                    overlap_x = max(0, min(x1+w1, x2+w2) - max(x1, x2))
+                    overlap_y = max(0, min(y1+h1, y2+h2) - max(y1, y2))
+                    overlap_area = overlap_x * overlap_y
+                    
+                    if overlap_area > 0.5 * min(w1*h1, w2*h2):
+                        is_duplicate = True
+                        break
+                        
+                if not is_duplicate:
+                    cascade_faces.append(face)
             
             # If Haar cascade found faces, use them
             if len(cascade_faces) > 0:
@@ -209,7 +260,7 @@ class FaceRecognition:
             logging.error(f"Error training model: {str(e)}")
             return False
     
-    def recognize_face(self, image_path, confidence_threshold=70):
+    def recognize_face(self, image_path, confidence_threshold=50):
         """Recognize a face from an image and return user ID and confidence"""
         if not self.model_trained:
             logging.warning("Face recognition model not trained yet")
@@ -237,7 +288,7 @@ class FaceRecognition:
             logging.error(f"Error recognizing face: {str(e)}")
             return None, 0
     
-    def find_matching_faces(self, image_path, confidence_threshold=50):
+    def find_matching_faces(self, image_path, confidence_threshold=40):
         """
         Find all potential matches for a face above the confidence threshold
         Returns primary matches, similar people, and relatives
@@ -280,19 +331,29 @@ class FaceRecognition:
             
             for face_image in user_face_images:
                 try:
-                    # Predict using the model
-                    predicted_id, confidence = self.recognizer.predict(face_img)
+                    # Get the path to the user's face image
+                    image_path = os.path.join(os.path.dirname(__file__), face_image.image_path).replace('\\', '/')
                     
-                    # Convert confidence score
-                    confidence_score = 100 - min(confidence, 100)
+                    # Extract the face from the image
+                    user_face = self.extract_face(image_path)
                     
-                    if confidence_score > highest_confidence:
-                        highest_confidence = confidence_score
+                    if user_face is not None:
+                        # Use the model for prediction
+                        # Predict using the model
+                        predicted_id, confidence = self.recognizer.predict(face_img)
+                        
+                        # Convert confidence score
+                        confidence_score = 100 - min(confidence, 100)
+                        
+                        if confidence_score > highest_confidence:
+                            highest_confidence = confidence_score
+                        
+                        # Calculate visual similarity separately
+                        # This would use feature-based comparison in a more sophisticated implementation
+                        visual_similarity = max(visual_similarity, confidence_score * 0.8)
                     
-                    # Calculate visual similarity separately
-                    # This would use feature-based comparison in a more sophisticated implementation
-                    visual_similarity = max(visual_similarity, confidence_score * 0.8)
-                except Exception:
+                except Exception as e:
+                    logging.error(f"Error processing face image: {str(e)}")
                     continue
             
             # Create match object with all relevant info
@@ -315,7 +376,7 @@ class FaceRecognition:
         
         # Get similar-looking people who aren't in primary matches
         # These are people who look similar but didn't meet the confidence threshold
-        similar_people = [m for m in all_matches if m not in primary_matches and m['visual_similarity'] >= 30][:5]
+        similar_people = [m for m in all_matches if m not in primary_matches and m['visual_similarity'] >= 20][:5]
         
         # Get relatives of matched people
         relatives = self._get_relatives_of_matched_people(primary_matches)

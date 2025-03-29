@@ -1,12 +1,16 @@
 import os
 import uuid
 import cv2
+import numpy as np
 from flask import render_template, request, redirect, url_for, flash, abort, jsonify
 from app import app
 from database import DatabaseManager
 from face_recognition import FaceRecognition
 import logging
 from werkzeug.utils import secure_filename
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize face recognition
 face_recognition = FaceRecognition()
@@ -255,16 +259,43 @@ def search():
             file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
             file.save(file_path)
             
-            # Get confidence threshold from form
-            confidence_threshold = int(request.form.get('confidence_threshold', 50))
+            # Get confidence threshold from form (default to 40 - lower for better matching)
+            confidence_threshold = int(request.form.get('confidence_threshold', 40))
             
-            # Detect faces in the uploaded image
+            # Detect faces in the uploaded image with improved detection
             faces, _ = face_recognition.detect_faces(file_path)
             
             if len(faces) == 0:
-                flash('No face detected in the uploaded image', 'warning')
-                os.remove(file_path)
-                return redirect(url_for('search'))
+                # Try again with more aggressive parameters
+                logging.debug(f"No faces found initially, trying with more aggressive parameters")
+                
+                # Load image and try pre-processing
+                image = cv2.imread(file_path)
+                if image is not None:
+                    # Convert to grayscale
+                    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    
+                    # Apply histogram equalization for better contrast
+                    gray = cv2.equalizeHist(gray)
+                    
+                    # Try detecting with more aggressive parameters
+                    cascade_faces = face_recognition.face_cascade.detectMultiScale(
+                        gray,
+                        scaleFactor=1.05,  # Smaller scale factor for more detections
+                        minNeighbors=2,    # Lower neighbors threshold
+                        minSize=(20, 20),  # Smaller minimum face size
+                        flags=cv2.CASCADE_SCALE_IMAGE
+                    )
+                    
+                    if len(cascade_faces) > 0:
+                        faces = cascade_faces
+                        logging.debug(f"Found {len(faces)} faces with aggressive parameters")
+                
+                # If still no faces found
+                if len(faces) == 0:
+                    flash('No face detected in the uploaded image. Try with a clearer photo or different lighting.', 'warning')
+                    os.remove(file_path)
+                    return redirect(url_for('search'))
             
             # Search for matching faces with enhanced matching
             match_results = face_recognition.find_matching_faces(
