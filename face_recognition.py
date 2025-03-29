@@ -192,3 +192,141 @@ class FaceRecognition:
         matches.sort(key=lambda x: x['confidence'], reverse=True)
         
         return matches
+        
+    def analyze_video(self, video_path, confidence_threshold=50, sample_rate=1):
+        """
+        Analyze a video file and identify faces in it
+        
+        Args:
+            video_path: Path to the video file
+            confidence_threshold: Minimum confidence for face recognition
+            sample_rate: Process every Nth frame (default: 1 - process every frame)
+            
+        Returns:
+            List of dictionaries with detection results
+        """
+        if not self.model_trained:
+            logging.warning("Face recognition model not trained yet")
+            return []
+        
+        results = []
+        
+        try:
+            # Open the video file
+            cap = cv2.VideoCapture(video_path)
+            
+            # Get video properties
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = frame_count / fps if fps > 0 else 0
+            
+            logging.info(f"Analyzing video: {video_path}, FPS: {fps}, Duration: {duration}s")
+            
+            # Initialize variables
+            frame_number = 0
+            
+            # Process frames
+            while cap.isOpened():
+                ret, frame = cap.read()
+                
+                if not ret:
+                    break
+                
+                # Process every Nth frame based on sample_rate
+                if frame_number % sample_rate == 0:
+                    # Save frame as temporary image
+                    temp_frame_path = os.path.join(os.path.dirname(__file__), 'static/uploads', f'temp_frame_{frame_number}.jpg')
+                    cv2.imwrite(temp_frame_path, frame)
+                    
+                    # Timestamp in seconds
+                    timestamp = frame_number / fps if fps > 0 else 0
+                    
+                    # Detect faces in the frame
+                    faces, gray = self.detect_faces(temp_frame_path)
+                    
+                    # Process each face in the frame
+                    for face_idx, (x, y, w, h) in enumerate(faces):
+                        # Extract and save the face
+                        face_file = f'temp_face_{frame_number}_{face_idx}.jpg'
+                        face_path = os.path.join(os.path.dirname(__file__), 'static/uploads', face_file)
+                        
+                        # Create a copy of just the face region and save it
+                        face_img = gray[y:y+h, x:x+w]
+                        face_img = cv2.resize(face_img, (100, 100))
+                        cv2.imwrite(face_path, face_img)
+                        
+                        # Recognize the face
+                        user_id, confidence = self.recognize_face(face_path, confidence_threshold)
+                        
+                        if user_id is not None:
+                            # Get user information
+                            user = DatabaseManager.get_user(user_id)
+                            
+                            if user:
+                                # Format timestamp as MM:SS
+                                mins = int(timestamp // 60)
+                                secs = int(timestamp % 60)
+                                time_str = f"{mins:02d}:{secs:02d}"
+                                
+                                # Add detection to results
+                                results.append({
+                                    'frame': frame_number,
+                                    'timestamp': timestamp,
+                                    'time_str': time_str,
+                                    'user': user,
+                                    'confidence': confidence,
+                                    'face_path': os.path.join('static/uploads', face_file),
+                                    'face_position': (x, y, w, h)
+                                })
+                        
+                        # Clean up temporary face file
+                        os.remove(face_path)
+                    
+                    # Clean up temporary frame file
+                    os.remove(temp_frame_path)
+                
+                frame_number += 1
+            
+            # Release the video capture object
+            cap.release()
+            
+            # Group results by user
+            user_detections = {}
+            for result in results:
+                user_id = result['user'].id
+                if user_id not in user_detections:
+                    user_detections[user_id] = {
+                        'user': result['user'],
+                        'detections': [],
+                        'first_seen': result['timestamp'],
+                        'last_seen': result['timestamp'],
+                        'highest_confidence': result['confidence'],
+                        'total_appearances': 0
+                    }
+                
+                user_detections[user_id]['detections'].append(result)
+                user_detections[user_id]['total_appearances'] += 1
+                user_detections[user_id]['last_seen'] = max(user_detections[user_id]['last_seen'], result['timestamp'])
+                user_detections[user_id]['highest_confidence'] = max(user_detections[user_id]['highest_confidence'], result['confidence'])
+            
+            # Convert to list and sort by most appearances
+            summary = list(user_detections.values())
+            summary.sort(key=lambda x: x['total_appearances'], reverse=True)
+            
+            logging.info(f"Video analysis complete. Found {len(results)} face detections of {len(summary)} unique individuals.")
+            
+            return {
+                'results': results,
+                'summary': summary,
+                'video_info': {
+                    'path': video_path,
+                    'fps': fps,
+                    'frame_count': frame_count,
+                    'duration': duration,
+                    'duration_str': f"{int(duration//60):02d}:{int(duration%60):02d}"
+                }
+            }
+        
+        except Exception as e:
+            logging.error(f"Error analyzing video: {str(e)}")
+            return []

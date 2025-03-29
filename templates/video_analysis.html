@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Video Analysis{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="fas fa-video me-2"></i> Video Analysis</h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Upload a video file to analyze and recognize faces of individuals throughout the video.</p>
+                    
+                    {% for category, message in get_flashed_messages(with_categories=true) %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if analysis %}
+                        <!-- Analysis Results -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i> Analysis Results</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <h5><i class="fas fa-film me-2"></i> Video Information</h5>
+                                    <p><strong>Duration:</strong> {{ analysis.video_info.duration_str }}</p>
+                                    <p><strong>Total Frames:</strong> {{ analysis.video_info.frame_count }}</p>
+                                    <p><strong>Frame Rate:</strong> {{ analysis.video_info.fps|round(1) }} fps</p>
+                                </div>
+                                
+                                <h4 class="mb-3">People Detected in Video</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>First Seen</th>
+                                                <th>Last Seen</th>
+                                                <th>Appearances</th>
+                                                <th>Confidence</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for person in analysis.summary %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td>{{ person.user.name }}</td>
+                                                <td>{{ person.first_seen|int // 60 }}:{{ "%02d"|format(person.first_seen|int % 60) }}</td>
+                                                <td>{{ person.last_seen|int // 60 }}:{{ "%02d"|format(person.last_seen|int % 60) }}</td>
+                                                <td>{{ person.total_appearances }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar 
+                                                                    {% if person.highest_confidence >= 80 %}bg-success
+                                                                    {% elif person.highest_confidence >= 60 %}bg-info
+                                                                    {% elif person.highest_confidence >= 40 %}bg-warning
+                                                                    {% else %}bg-danger{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ person.highest_confidence }}%;" 
+                                                             aria-valuenow="{{ person.highest_confidence }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            {{ person.highest_confidence }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('user_details', user_id=person.user.id) }}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-user"></i> View Profile
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <h4 class="mt-4 mb-3">Timeline of Appearances</h4>
+                                <div class="timeline-container p-3 bg-light rounded">
+                                    {% for result in analysis.results %}
+                                    <div class="timeline-item mb-2 p-2 border-start border-primary ps-3">
+                                        <span class="badge bg-primary">{{ result.time_str }}</span>
+                                        <span class="ms-2">{{ result.user.name }}</span>
+                                        <span class="badge bg-secondary ms-2">{{ result.confidence }}% match</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% elif no_results %}
+                        <div class="alert alert-warning">
+                            <h4><i class="fas fa-exclamation-triangle me-2"></i> No Results</h4>
+                            <p>No known faces were detected in the uploaded video. Please try with a different video or make sure your users have face images registered in the system.</p>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Upload Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0"><i class="fas fa-upload me-2"></i> Upload Video</h4>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('video_analysis') }}" method="post" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="video_file" class="form-label">Video File</label>
+                                    <input type="file" class="form-control" id="video_file" name="video_file" required accept=".mp4,.avi,.mov,.mkv,.wmv">
+                                    <div class="form-text">Supported formats: MP4, AVI, MOV, MKV, WMV</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="confidence_threshold" class="form-label">Confidence Threshold: <span id="threshold_value">50%</span></label>
+                                            <input type="range" class="form-range" min="10" max="90" step="5" value="50" id="confidence_threshold" name="confidence_threshold">
+                                            <div class="form-text">Higher values will show only more confident matches</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="sample_rate" class="form-label">Sample Rate: <span id="sample_rate_value">15</span></label>
+                                            <input type="range" class="form-range" min="1" max="30" step="1" value="15" id="sample_rate" name="sample_rate">
+                                            <div class="form-text">Process every Nth frame. Lower values = more accurate but slower.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> For optimal performance, please upload videos shorter than 5 minutes. Video processing may take some time depending on the file size and length.
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-video me-2"></i> Analyze Video
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Update the display values for sliders
+    const confidenceSlider = document.getElementById('confidence_threshold');
+    const confidenceValue = document.getElementById('threshold_value');
+    
+    confidenceSlider.addEventListener('input', function() {
+        confidenceValue.textContent = this.value + '%';
+    });
+    
+    const sampleRateSlider = document.getElementById('sample_rate');
+    const sampleRateValue = document.getElementById('sample_rate_value');
+    
+    sampleRateSlider.addEventListener('input', function() {
+        sampleRateValue.textContent = this.value;
+    });
+</script>
+{% endblock %}

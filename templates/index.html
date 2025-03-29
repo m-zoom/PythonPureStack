@@ -9,7 +9,7 @@
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-user-plus fa-3x mb-3 text-primary"></i>
@@ -20,7 +20,7 @@
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-users fa-3x mb-3 text-success"></i>
@@ -31,13 +31,24 @@
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-search fa-3x mb-3 text-info"></i>
                 <h3 class="card-title">Face Search</h3>
                 <p class="card-text">Upload a face image to search for matching identities in the database.</p>
                 <a href="{{ url_for('search') }}" class="btn btn-info">Search Faces</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-video fa-3x mb-3 text-warning"></i>
+                <h3 class="card-title">Video Analysis</h3>
+                <p class="card-text">Analyze videos to identify people appearing throughout the footage.</p>
+                <a href="{{ url_for('video_analysis') }}" class="btn btn-warning">Analyze Videos</a>
             </div>
         </div>
     </div>
@@ -62,6 +73,8 @@
                             <li>User management with detailed profiles</li>
                             <li>Multiple face images per user for improved accuracy</li>
                             <li>Adjustable confidence threshold for recognition</li>
+                            <li>Video analysis for identifying people in footage</li>
+                            <li>Timeline tracking of appearances in videos</li>
                         </ul>
                         <form action="{{ url_for('train_model') }}" method="post" class="mt-3">
                             <button type="submit" class="btn btn-warning">

@@ -1,5 +1,6 @@
 import os
 import uuid
+import cv2
 from flask import render_template, request, redirect, url_for, flash, abort, jsonify
 from app import app
 from database import DatabaseManager
@@ -279,3 +280,86 @@ def train_model():
         flash('Error training model or not enough face data', 'danger')
     
     return redirect(url_for('index'))
+
+@app.route('/video_analysis', methods=['GET', 'POST'])
+def video_analysis():
+    if request.method == 'GET':
+        return render_template('video_analysis.html')
+    
+    if request.method == 'POST':
+        # Check if no file is provided
+        if 'video_file' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['video_file']
+        
+        # Check if filename is empty
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        
+        # Check if file is a valid video
+        valid_extensions = {'mp4', 'avi', 'mov', 'mkv', 'wmv'}
+        if not '.' in file.filename or file.filename.rsplit('.', 1)[1].lower() not in valid_extensions:
+            flash('Invalid video format. Supported formats: mp4, avi, mov, mkv, wmv', 'danger')
+            return redirect(request.url)
+        
+        try:
+            # Save the video file
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+            file.save(file_path)
+            
+            # Get confidence threshold from form
+            confidence_threshold = int(request.form.get('confidence_threshold', 50))
+            
+            # Get sample rate from form (process every Nth frame)
+            sample_rate = int(request.form.get('sample_rate', 15))
+            
+            # Check if the file is a valid video
+            cap = cv2.VideoCapture(file_path)
+            if not cap.isOpened():
+                cap.release()
+                os.remove(file_path)
+                flash('The uploaded file is not a valid video', 'danger')
+                return redirect(request.url)
+            
+            # Get video info
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            duration = frame_count / fps if fps > 0 else 0
+            cap.release()
+            
+            # If video is too long, warn the user
+            if duration > 300:  # 5 minutes
+                os.remove(file_path)
+                flash('Video is too long. Please upload a video under 5 minutes for better performance', 'warning')
+                return redirect(request.url)
+            
+            # Analyze the video
+            flash('Video uploaded successfully. Processing...', 'info')
+            analysis_results = face_recognition.analyze_video(
+                file_path, 
+                confidence_threshold=confidence_threshold,
+                sample_rate=sample_rate
+            )
+            
+            # Remove the video file after processing to save space
+            os.remove(file_path)
+            
+            if not analysis_results or not analysis_results.get('summary'):
+                flash('No faces were recognized in the video', 'warning')
+                return render_template('video_analysis.html', no_results=True)
+            
+            return render_template(
+                'video_analysis.html',
+                analysis=analysis_results,
+                confidence_threshold=confidence_threshold
+            )
+            
+        except Exception as e:
+            logging.error(f"Error in video analysis: {str(e)}")
+            flash(f'Error processing video: {str(e)}', 'danger')
+            return redirect(request.url)
