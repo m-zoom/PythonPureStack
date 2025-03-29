@@ -1,101 +1,154 @@
 {% extends 'base.html' %}
 
-{% block title %}User Management - Federal Biometrics of Nigeria (FBN){% endblock %}
+{% block title %}View Users{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2><i class="fas fa-users"></i> User Management</h2>
-            <a href="{{ url_for('add_user') }}" class="btn btn-primary">
-                <i class="fas fa-user-plus"></i> Add New User
-            </a>
-        </div>
-        <hr>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5">All Users</h1>
+        <a href="{{ url_for('add_user') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-2"></i> Add New User
+        </a>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        {% if users %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Phone</th>
-                        <th scope="col">Date Added</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <th scope="row">{{ user.id }}</th>
-                        <td>{{ user.name }}</td>
-                        <td>{{ user.email if user.email else '-' }}</td>
-                        <td>{{ user.phone if user.phone else '-' }}</td>
-                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('user_details', user_id=user.id) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" 
-                                        data-bs-target="#deleteModal{{ user.id }}">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </div>
-                            
-                            <!-- Delete Modal -->
-                            <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" 
-                                 aria-labelledby="deleteModalLabel{{ user.id }}" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-danger text-white">
-                                            <h5 class="modal-title" id="deleteModalLabel{{ user.id }}">
-                                                <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to delete <strong>{{ user.name }}</strong>?</p>
-                                            <p>This action cannot be undone and will remove all face images associated with this user.</p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
-                                            <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post">
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="fas fa-trash"></i> Delete User
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
+    
+    {% if users %}
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Relationship Type</th>
+                            <th>Photos</th>
+                            <th>Relatives</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="align-middle" style="width: 70px;">
+                                {% set face_images = user.face_images %}
+                                {% if face_images and face_images|length > 0 %}
+                                <img src="{{ url_for('static', filename=face_images[0].image_path.replace('static/', '')) }}" 
+                                     alt="{{ user.name }}" class="rounded-circle" width="50" height="50">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user"></i>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <a href="{{ url_for('user_details', user_id=user.id) }}" class="text-decoration-none fw-bold">
+                                    {{ user.name }}
+                                </a>
+                            </td>
+                            <td class="align-middle">
+                                {% if user.email %}
+                                <a href="mailto:{{ user.email }}" class="text-decoration-none">
+                                    {{ user.email }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">Not provided</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                {% if user.phone %}
+                                {{ user.phone }}
+                                {% else %}
+                                <span class="text-muted small">Not provided</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                {% if user.relationship_type %}
+                                <span class="badge bg-info">{{ user.relationship_type }}</span>
+                                {% else %}
+                                <span class="text-muted small">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge bg-success">{{ user.face_images|length }}</span>
+                            </td>
+                            <td class="align-middle">
+                                {% set relatives = user.get_relatives() %}
+                                <span class="badge bg-primary">{{ relatives|length }}</span>
+                            </td>
+                            <td class="align-middle">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('user_details', user_id=user.id) }}" class="btn btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-danger" 
+                                            onclick="confirmDelete({{ user.id }}, '{{ user.name }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        {% else %}
-        <div class="alert alert-info text-center">
-            <i class="fas fa-info-circle fa-2x mb-3"></i>
-            <h4>No Users Found</h4>
-            <p>There are no users in the database. Add a new user to get started.</p>
-            <a href="{{ url_for('add_user') }}" class="btn btn-primary">
-                <i class="fas fa-user-plus"></i> Add New User
+    </div>
+    
+    <!-- Delete User Modal -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="deleteUserName"></strong>?</p>
+                    <p class="text-danger mb-0">This action cannot be undone and will remove all face images and relationship data for this user.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteUserForm" method="post">
+                        <button type="submit" class="btn btn-danger">Delete User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="display-1 text-muted mb-3">
+                <i class="fas fa-users-slash"></i>
+            </div>
+            <h3 class="mb-3">No Users Found</h3>
+            <p class="text-muted mb-4">There are no users in the database yet. Get started by adding a new user.</p>
+            <a href="{{ url_for('add_user') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus me-2"></i> Add First User
             </a>
         </div>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete(userId, userName) {
+        // Set the user name in the modal
+        document.getElementById('deleteUserName').textContent = userName;
+        
+        // Set the form action
+        document.getElementById('deleteUserForm').action = '/users/' + userId + '/delete';
+        
+        // Show the modal
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+        deleteModal.show();
+    }
+</script>
 {% endblock %}

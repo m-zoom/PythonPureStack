@@ -77,28 +77,42 @@ def add_user():
                 relationship_type=relationship_type
             )
             
-            # Handle face image upload
+            # Handle face image uploads
             if 'face_image' in request.files:
-                file = request.files['face_image']
-                if file.filename != '' and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    unique_filename = f"{uuid.uuid4()}_{filename}"
-                    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-                    file.save(file_path)
-                    
-                    # Detect face in the uploaded image
-                    faces, _ = face_recognition.detect_faces(file_path)
-                    
-                    if len(faces) > 0:
-                        # Save the face image to the database with forward slashes
-                        relative_path = 'static/uploads/' + unique_filename
-                        DatabaseManager.add_face_image(user.id, relative_path)
+                files = request.files.getlist('face_image')
+                successful_uploads = 0
+                failed_uploads = 0
+                
+                for file in files:
+                    if file.filename != '' and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        unique_filename = f"{uuid.uuid4()}_{filename}"
+                        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+                        file.save(file_path)
                         
-                        # Retrain the model if a face was added
-                        face_recognition.train_model()
+                        # Detect face in the uploaded image
+                        faces, _ = face_recognition.detect_faces(file_path)
+                        
+                        if len(faces) > 0:
+                            # Save the face image to the database with forward slashes
+                            relative_path = 'static/uploads/' + unique_filename
+                            DatabaseManager.add_face_image(user.id, relative_path)
+                            successful_uploads += 1
+                        else:
+                            flash(f'No face detected in image: {filename}', 'warning')
+                            os.remove(file_path)
+                            failed_uploads += 1
+                
+                # Retrain the model if any faces were added
+                if successful_uploads > 0:
+                    face_recognition.train_model()
+                    if successful_uploads == 1:
+                        flash('Face image added successfully', 'success')
                     else:
-                        flash('No face detected in the uploaded image', 'warning')
-                        os.remove(file_path)
+                        flash(f'{successful_uploads} face images added successfully', 'success')
+                
+                if failed_uploads > 0:
+                    flash(f'{failed_uploads} uploads failed because no faces were detected', 'warning')
             
             flash('User added successfully', 'success')
             return redirect(url_for('user_details', user_id=user.id))

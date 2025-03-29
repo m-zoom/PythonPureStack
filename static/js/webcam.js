@@ -17,19 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap modal
     const modal = new bootstrap.Modal(webcamModal);
     
-    // Show the webcam modal when 'Use Webcam' button is clicked
-    const webcamLinks = document.querySelectorAll('a[href^="/api/webcam_capture"]');
-    webcamLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            modal.show();
-            if (!webcamActive) {
-                webcamButtonText.textContent = 'Start Camera';
-                toggleWebcamButton.classList.remove('btn-danger');
-                toggleWebcamButton.classList.add('btn-secondary');
-            }
-        });
-    });
+    // The webcam modal is now opened by Bootstrap data-bs-toggle="modal"
     
     // Toggle webcam
     toggleWebcamButton.addEventListener('click', function() {
