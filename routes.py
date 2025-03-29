@@ -266,18 +266,25 @@ def search():
                 os.remove(file_path)
                 return redirect(url_for('search'))
             
-            # Search for matching faces
-            matches = face_recognition.find_matching_faces(
+            # Search for matching faces with enhanced matching
+            match_results = face_recognition.find_matching_faces(
                 file_path, 
                 confidence_threshold=confidence_threshold
             )
+            
+            # Extract the different match categories
+            primary_matches = match_results.get('primary_matches', [])
+            similar_people = match_results.get('similar_people', [])
+            relatives = match_results.get('relatives', [])
             
             # Store the path with 'static/' prefix for local development compatibility
             # Use forward slashes for web URLs, regardless of the OS
             search_image = 'static/uploads/' + unique_filename
             
             return render_template('search.html', 
-                                 matches=matches, 
+                                 primary_matches=primary_matches,
+                                 similar_people=similar_people,
+                                 relatives=relatives,
                                  search_image=search_image, 
                                  confidence_threshold=confidence_threshold)
         else:

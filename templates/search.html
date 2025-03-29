@@ -3,22 +3,23 @@
 {% block title %}Face Search - Federal Biometrics of Nigeria (FBN){% endblock %}
 
 {% block content %}
-{% if search_image and matches is defined %}
+{% if search_image %}
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header {% if matches %}bg-success{% else %}bg-danger{% endif %} text-white">
+            <div class="card-header {% if primary_matches %}bg-success{% else %}bg-danger{% endif %} text-white">
                 <h4>
-                    {% if matches %}
-                    <i class="fas fa-check-circle"></i> Match Results ({{ matches|length }} found)
+                    {% if primary_matches %}
+                    <i class="fas fa-check-circle"></i> Match Results 
+                    ({{ primary_matches|length }} exact matches, {{ similar_people|length }} similar people, {{ relatives|length }} relatives)
                     {% else %}
-                    <i class="fas fa-times-circle"></i> No Matches Found
+                    <i class="fas fa-times-circle"></i> No Exact Matches Found
                     {% endif %}
                 </h4>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">Search Image</h5>
@@ -30,61 +31,162 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-8">
-                        {% if matches %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>Name</th>
-                                        <th>Relationship</th>
-                                        <th>Confidence</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for match in matches %}
-                                    <tr>
-                                        <td>{{ loop.index }}</td>
-                                        <td>{{ match['user'].name }}</td>
-                                        <td>
-                                            {% if match['user'].relationship_type %}
-                                            <span class="badge bg-info">{{ match['user'].relationship_type }}</span>
-                                            {% else %}
-                                            -
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar 
-                                                            {% if match['confidence'] >= 80 %}bg-success
-                                                            {% elif match['confidence'] >= 60 %}bg-info
-                                                            {% elif match['confidence'] >= 40 %}bg-warning
-                                                            {% else %}bg-danger{% endif %}" 
-                                                     role="progressbar" 
-                                                     style="width: {{ match['confidence'] }}%;" 
-                                                     aria-valuenow="{{ match['confidence'] }}" 
-                                                     aria-valuemin="0" 
-                                                     aria-valuemax="100">
-                                                    {{ match['confidence'] }}%
+                    <div class="col-md-9">
+                        <!-- Primary Matches -->
+                        {% if primary_matches %}
+                        <div class="mb-4">
+                            <h5><i class="fas fa-star"></i> Primary Matches (Exact)</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Name</th>
+                                            <th>Relationship Type</th>
+                                            <th>Match Confidence</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for match in primary_matches %}
+                                        <tr>
+                                            <td>{{ loop.index }}</td>
+                                            <td>{{ match['user'].name }}</td>
+                                            <td>
+                                                {% if match['relationship_info']['type'] and match['relationship_info']['type'] != "Not specified" %}
+                                                <span class="badge bg-info">{{ match['relationship_info']['type'] }}</span>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar 
+                                                                {% if match['confidence'] >= 80 %}bg-success
+                                                                {% elif match['confidence'] >= 60 %}bg-info
+                                                                {% elif match['confidence'] >= 40 %}bg-warning
+                                                                {% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ match['confidence'] }}%;" 
+                                                         aria-valuenow="{{ match['confidence'] }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ match['confidence'] }}%
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <a href="{{ url_for('user_details', user_id=match['user'].id) }}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-user"></i> View Profile
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('user_details', user_id=match['user'].id) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-user"></i> View Profile
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        {% else %}
+                        {% endif %}
+                        
+                        <!-- Similar People -->
+                        {% if similar_people %}
+                        <div class="mb-4">
+                            <h5><i class="fas fa-users"></i> Similar Looking People</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Relationship Type</th>
+                                            <th>Visual Similarity</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for person in similar_people %}
+                                        <tr>
+                                            <td>{{ person['user'].name }}</td>
+                                            <td>
+                                                {% if person['relationship_info']['type'] and person['relationship_info']['type'] != "Not specified" %}
+                                                <span class="badge bg-info">{{ person['relationship_info']['type'] }}</span>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-secondary" 
+                                                         role="progressbar" 
+                                                         style="width: {{ person['visual_similarity'] }}%;" 
+                                                         aria-valuenow="{{ person['visual_similarity'] }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ person['visual_similarity']|round|int }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('user_details', user_id=person['user'].id) }}" class="btn btn-sm btn-secondary">
+                                                    <i class="fas fa-user"></i> View Profile
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Relatives -->
+                        {% if relatives %}
+                        <div>
+                            <h5><i class="fas fa-family"></i> Relatives of Matched People</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Relationship Type</th>
+                                            <th>Related To</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for relative in relatives %}
+                                        <tr>
+                                            <td>{{ relative['user'].name }}</td>
+                                            <td>
+                                                {% if relative['relationship_info']['type'] and relative['relationship_info']['type'] != "Not specified" %}
+                                                <span class="badge bg-info">{{ relative['relationship_info']['type'] }}</span>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if relative['relationship_info'].get('related_to') %}
+                                                <span class="badge bg-dark">{{ relative['relationship_info']['related_to'] }}</span>
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('user_details', user_id=relative['user'].id) }}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-user"></i> View Profile
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not primary_matches and not similar_people and not relatives %}
                         <div class="alert alert-warning text-center">
                             <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
-                            <h4>No Matching Faces Found</h4>
+                            <h4>No Matching or Similar Faces Found</h4>
                             <p>Try adjusting the confidence threshold or using a different image.</p>
                             <p>If this person should be in the system, consider adding them as a new user.</p>
                             <a href="{{ url_for('add_user') }}" class="btn btn-primary mt-2">

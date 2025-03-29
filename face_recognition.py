@@ -238,18 +238,35 @@ class FaceRecognition:
             return None, 0
     
     def find_matching_faces(self, image_path, confidence_threshold=50):
-        """Find all potential matches for a face above the confidence threshold"""
+        """
+        Find all potential matches for a face above the confidence threshold
+        Returns primary matches, similar people, and relatives
+        """
         if not self.model_trained:
             logging.warning("Face recognition model not trained yet")
-            return []
+            return {
+                'primary_matches': [],
+                'similar_people': [],
+                'relatives': []
+            }
         
-        matches = []
+        primary_matches = []
+        all_matches = []
         
         # Get the face image
         face_img = self.extract_face(image_path)
         
         if face_img is None:
-            return matches
+            return {
+                'primary_matches': [],
+                'similar_people': [],
+                'relatives': []
+            }
+        
+        # Estimate gender from face image (simplified approximation)
+        # Note: This is not a reliable gender detection method and should be improved
+        # with a proper gender classification model in production
+        gender = self._estimate_gender(face_img)
         
         # Get all users
         all_users = DatabaseManager.get_all_users()
@@ -259,6 +276,8 @@ class FaceRecognition:
             user_face_images = DatabaseManager.get_user_face_images(user.id)
             
             highest_confidence = 0
+            visual_similarity = 0
+            
             for face_image in user_face_images:
                 try:
                     # Predict using the model
@@ -269,19 +288,99 @@ class FaceRecognition:
                     
                     if confidence_score > highest_confidence:
                         highest_confidence = confidence_score
+                    
+                    # Calculate visual similarity separately
+                    # This would use feature-based comparison in a more sophisticated implementation
+                    visual_similarity = max(visual_similarity, confidence_score * 0.8)
                 except Exception:
                     continue
             
+            # Create match object with all relevant info
+            match = {
+                'user': user,
+                'confidence': highest_confidence,
+                'visual_similarity': visual_similarity,
+                'same_gender': self._has_same_gender(user, gender),
+                'relationship_info': self._get_relationship_info(user)
+            }
+            
+            # Add to the appropriate lists based on confidence threshold
+            all_matches.append(match)
             if highest_confidence >= confidence_threshold:
-                matches.append({
-                    'user': user,
-                    'confidence': highest_confidence
-                })
+                primary_matches.append(match)
         
         # Sort matches by confidence (highest first)
-        matches.sort(key=lambda x: x['confidence'], reverse=True)
+        primary_matches.sort(key=lambda x: x['confidence'], reverse=True)
+        all_matches.sort(key=lambda x: x['visual_similarity'], reverse=True)
         
-        return matches
+        # Get similar-looking people who aren't in primary matches
+        # These are people who look similar but didn't meet the confidence threshold
+        similar_people = [m for m in all_matches if m not in primary_matches and m['visual_similarity'] >= 30][:5]
+        
+        # Get relatives of matched people
+        relatives = self._get_relatives_of_matched_people(primary_matches)
+        
+        return {
+            'primary_matches': primary_matches,
+            'similar_people': similar_people,
+            'relatives': relatives
+        }
+    
+    def _estimate_gender(self, face_img):
+        """
+        Simple gender estimation based on facial features
+        This is a placeholder for a more sophisticated gender detection model
+        In a production system, this should be replaced with a proper ML-based gender classifier
+        """
+        # Placeholder: in the real implementation, this would use a trained gender detection model
+        # For now, we'll return "unknown" as we should use a proper ML model for this task
+        return "unknown"
+    
+    def _has_same_gender(self, user, gender):
+        """
+        Check if user has the same gender as estimated from the face
+        In a real implementation, this would compare detected gender with user profile gender
+        """
+        # Simplified implementation
+        # In a real system, this would compare the detected gender with the user's gender field
+        return True if gender == "unknown" else False
+    
+    def _get_relationship_info(self, user):
+        """Get relationship information for a user"""
+        relationship_type = user.relationship_type if user.relationship_type else "Not specified"
+        return {
+            'type': relationship_type
+        }
+    
+    def _get_relatives_of_matched_people(self, matches):
+        """Get relatives of people in the primary matches list"""
+        relatives = []
+        seen_ids = set(m['user'].id for m in matches)
+        
+        # For each matched person
+        for match in matches:
+            user = match['user']
+            
+            # Get user's relatives
+            user_relatives = DatabaseManager.get_user_relatives(user.id)
+            
+            # Add relatives not already in primary matches
+            for relative in user_relatives:
+                if relative.id not in seen_ids:
+                    relatives.append({
+                        'user': relative,
+                        'confidence': 0,  # Relative is not visually matched
+                        'visual_similarity': 0,
+                        'same_gender': False,
+                        'relationship_info': {
+                            'type': relative.relationship_type if relative.relationship_type else "Not specified",
+                            'related_to': user.name,
+                            'relationship': "Relative"  # This could be more specific in a real implementation
+                        }
+                    })
+                    seen_ids.add(relative.id)
+        
+        return relatives
         
     def analyze_video(self, video_path, confidence_threshold=50, sample_rate=1):
         """
