@@ -1,7 +1,11 @@
 Face Recognition System
+
 Developer: ADEBAYO MUSTURPHA KEWULERE
+
 Tiktok: @adebayo_musturpha
+
 Facebook: Musturhs Adebayo
+
 x: @mzoom_olabewa
 
 Project Description
