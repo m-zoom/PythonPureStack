@@ -24,7 +24,7 @@
                                 <h5 class="mb-0">Search Image</h5>
                             </div>
                             <div class="card-body text-center">
-                                <img src="{{ url_for('static', filename=search_image if not search_image.startswith('static/') else search_image.replace('static/', '', 1)) }}" 
+                                <img src="{{ url_for('static', filename=(search_image if not search_image.startswith('static/') else search_image.replace('static/', '', 1)).replace('\\', '/')) }}" 
                                      class="img-fluid rounded" alt="Search Image">
                             </div>
                         </div>

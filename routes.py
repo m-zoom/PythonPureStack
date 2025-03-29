@@ -65,8 +65,8 @@ def add_user():
                     faces, _ = face_recognition.detect_faces(file_path)
                     
                     if len(faces) > 0:
-                        # Save the face image to the database
-                        relative_path = os.path.join('static/uploads', unique_filename)
+                        # Save the face image to the database with forward slashes
+                        relative_path = 'static/uploads/' + unique_filename
                         DatabaseManager.add_face_image(user.id, relative_path)
                         
                         # Retrain the model if a face was added

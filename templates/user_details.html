@@ -73,7 +73,7 @@
                             {% for image in face_images %}
                             <div class="col-md-6 mb-3">
                                 <div class="card h-100">
-                                    <img src="{{ url_for('static', filename=image.image_path if not image.image_path.startswith('static/') else image.image_path.replace('static/', '', 1)) }}" 
+                                    <img src="{{ url_for('static', filename=(image.image_path if not image.image_path.startswith('static/') else image.image_path.replace('static/', '', 1)).replace('\\', '/')) }}" 
                                          class="card-img-top" alt="Face Image">
                                     <div class="card-body">
                                         <p class="card-text text-muted small">
@@ -101,7 +101,7 @@
                                                 <p>Are you sure you want to delete this face image?</p>
                                                 <p>This action cannot be undone and may affect the recognition accuracy.</p>
                                                 <div class="text-center">
-                                                    <img src="{{ url_for('static', filename=image.image_path if not image.image_path.startswith('static/') else image.image_path.replace('static/', '', 1)) }}" 
+                                                    <img src="{{ url_for('static', filename=(image.image_path if not image.image_path.startswith('static/') else image.image_path.replace('static/', '', 1)).replace('\\', '/')) }}" 
                                                          class="img-fluid rounded" style="max-height: 200px;" alt="Face Image">
                                                 </div>
                                             </div>
